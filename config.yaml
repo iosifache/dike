@@ -1,0 +1,9 @@
+---
+
+# Database configuration
+database:
+    server: 127.0.01
+    port: 27017
+    username: admin
+    password: admin
+    database: CODENAME
