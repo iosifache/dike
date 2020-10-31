@@ -21,6 +21,8 @@ class ConfigurationWorker:
 
     def __new__(cls: typing.TypeVar("ConfigurationWorker"),
                 filename: str) -> typing.TypeVar("ConfigurationWorker"):
+        if (filename is None):
+            return None
         if cls._instance is None:
             cls._instance = super(ConfigurationWorker, cls).__new__(cls)
             with open(filename) as config_file:
@@ -29,9 +31,20 @@ class ConfigurationWorker:
         return cls._instance
 
     def get_full_configuration(self) -> typing.Any:
-        """Gets the configuration stored in the given file"""
+        """Gets the configuration stored in the given file
+
+        Returns:
+            A configuration object, represented by the given YAML
+        """
         return self._config
 
     def get_configuration_space(self, space: ConfigurationSpace) -> typing.Any:
-        """Gets a collection of configurations from a specific space"""
+        """Gets a collection of configurations from a specific space
+
+        Args:
+            space: The configuration space that will be used for filtering
+        
+        Returns:
+            A subset of the full configuration object
+        """
         return self._config[space.value]

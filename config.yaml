@@ -2,7 +2,7 @@
 
 # Database configuration
 database:
-    server: 127.0.01
+    host: localhost
     port: 27017
     username: admin
     password: admin
