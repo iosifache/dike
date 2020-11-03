@@ -1,5 +1,11 @@
 ---
 
+# Extractor configuration
+extractors:
+    strings:
+        minimum_string_length: 10
+        minimum_occurances: 1
+
 # Database configuration
 database:
     host: localhost

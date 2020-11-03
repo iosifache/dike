@@ -1,9 +1,10 @@
-""" Database functionality """
+""" Database functionality"""
 
 import pymongo
 
 
 class DatabaseWorker:
+    """Class for working with MongoDB database"""
 
     _host: str = None
     _port: str = None
@@ -17,6 +18,15 @@ class DatabaseWorker:
 
     def __init__(self, host: str, port: int, username: str, password: str,
                  database: str):
+        """Initializes the object.
+
+        Args:
+            host: Domain or IP address of the host
+            port: Port address
+            username: Username for authentication
+            password: Password for authentication
+            database: Used database
+        """
         if (host is None or (port < 0 or port > 65535) or username is None
                 or password is None or database is None):
             return None
@@ -36,7 +46,7 @@ class DatabaseWorker:
             return None
 
     def use_collection(self, collection: str) -> bool:
-        """Sets a collection to be used in next operations
+        """Sets a collection to be used in next operations.
 
         Args:
             collection: The name of the collection
@@ -53,7 +63,7 @@ class DatabaseWorker:
         return True
 
     def query_all(self) -> pymongo.cursor.Cursor:
-        """Query all collections from current collection
+        """Query all collections from current collection.
         
         Returns:
             Cursor to the iterate through Mongo query results
@@ -61,7 +71,7 @@ class DatabaseWorker:
         return self._collection.find({})
 
     def query_one(self, query: dict) -> dict:
-        """Queries the current collection using a specific query
+        """Queries the current collection using a specific query.
 
         Args:
             query: The query used to filter the collection entries
@@ -72,7 +82,7 @@ class DatabaseWorker:
         return self._collection.find_one(query)
 
     def insert_one(self, new: dict) -> bool:
-        """Inserts an object into current collection
+        """Inserts an object into current collection.
 
         Args:
             new: The inserted object
@@ -83,7 +93,7 @@ class DatabaseWorker:
         return self._collection.insert_one(new).acknowledged
 
     def insert_many(self, many: list) -> bool:
-        """Inserts multiple values into current collection
+        """Inserts multiple values into current collection.
 
         Args:
             many: List of inserted objects
@@ -94,7 +104,7 @@ class DatabaseWorker:
         return self._collection.insert_many(many).acknowledged
 
     def delete_all(self) -> bool:
-        """Deletes all values from the current collection
+        """Deletes all values from the current collection.
 
         Returns:
             The status of the deletion operation
@@ -102,7 +112,7 @@ class DatabaseWorker:
         return self._collection.delete_many({}).acknowledged
 
     def update(self, selector: dict, modifier: dict) -> bool:
-        """Updates documents from current collection
+        """Updates documents from current collection.
 
         Args:
             selector: The query used to filter the updated documents
