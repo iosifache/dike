@@ -1,3 +1,9 @@
+# Custom ones
+.vscode
+tests/files/
+tests/logs/
+tests/rootfs/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -21,8 +21,7 @@ class ConfigurationWorker:
     _instance: typing.TypeVar("ConfigurationWorker") = None
     _config: typing.Any = None
 
-    # TODO: check if file exists
-    # TODO: log "Configuration file imported"
+    # TODO: log "{} configuration file imported"
     def __new__(cls: typing.TypeVar("ConfigurationWorker"),
                 filename: str) -> typing.TypeVar("ConfigurationWorker"):
         """Creates a new instance

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from modules import extractors
+from modules.extractors import core
+from modules.extractors import extractors
 from modules import database
 from modules import utils
 
@@ -8,29 +9,27 @@ config = utils.ConfigurationWorker("config.yaml")
 
 # Test connection to database
 
-database_config = config.get_configuration_space(
-    utils.ConfigurationSpace.DATABASE)
+if False:
 
-database_worker = database.DatabaseWorker(host=database_config["host"],
-                                          port=database_config["port"],
-                                          username=database_config["username"],
-                                          password=database_config["password"],
-                                          database=database_config["database"])
+    database_config = config.get_configuration_space(
+        utils.ConfigurationSpace.DATABASE)
 
-if (database_worker.use_collection("collection")):
-    records = database_worker.query_all()
+    database_worker = database.DatabaseWorker(
+        host=database_config["host"],
+        port=database_config["port"],
+        username=database_config["username"],
+        password=database_config["password"],
+        database=database_config["database"])
 
-# Test extraction of features from static analysis
+    if (database_worker.use_collection("collection")):
+        records = database_worker.query_all()
 
+# Test extraction of features
 extractors_config = config.get_configuration_space(
     utils.ConfigurationSpace.EXTRACTORS)
-
-master = extractors.ExtractorMaster("tests/files/hello.exe")
-
-string_extractor = extractors.Strings(
-    extractors_config["strings"]["minimum_string_length"],
-    extractors_config["strings"]["minimum_occurances"])
-pe_extractor = extractors.PECharacteristics()
-
-master.extract(string_extractor)
-master.extract(pe_extractor)
+extractor_master = core.ExtractorMaster(extractors_config,
+                                        "tests/files/hello.exe")
+extractor_master.attach(extractors.StringsExtractor())
+extractor_master.attach(extractors.OpcodesExtractor())
+extractor_master.attach(extractors.OpcodesExtractor())
+extractor_master.squeeze()
