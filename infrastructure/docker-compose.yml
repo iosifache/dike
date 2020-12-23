@@ -1,0 +1,38 @@
+# Services (modify the bind mount if the user is another one)
+services:
+    master:
+        build: master
+        volumes:
+            - /home/iosif/dike:/dike
+        networks:
+            network:
+                ipv4_address: 192.168.0.2
+    first_subordinate:
+        build: subordinate
+        volumes:
+            - /home/iosif/dike:/dike
+        networks:
+            network:
+                ipv4_address: 192.168.0.10
+    second_subordinate:
+        build: subordinate
+        volumes:
+            - /home/iosif/dike:/dike
+        networks:
+            network:
+                ipv4_address: 192.168.0.11
+    prediction:
+        build: prediction
+        volumes:
+            - /home/iosif/dike:/dike
+        networks:
+            network:
+                ipv4_address: 192.168.0.100
+
+# Network
+networks:
+    network:
+        ipam:
+            driver: default
+            config:
+                - subnet: "192.168.0.0/24"
