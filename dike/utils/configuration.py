@@ -8,6 +8,8 @@ from enum import Enum
 class ConfigurationSpace(Enum):
     """Enumeration for available configuration spaces."""
     EXTRACTORS = "extractors"
+    MASTER_SERVER = "master_server"
+    SUBORDINATE_SERVER = "subordintate_server"
     DATABASE = "database"
 
 

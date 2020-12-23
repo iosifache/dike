@@ -1,4 +1,3 @@
-from pickle import NONE
 import pefile
 import qiling
 import qiling.const

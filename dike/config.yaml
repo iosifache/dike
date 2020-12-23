@@ -1,6 +1,24 @@
 ---
 
-# Extractor configuration
+# Master server
+master_server:
+    cli:
+        banner: |
+            ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+            █░▄▀██▄██░█▀█░▄▄█
+            █░█░██░▄█░▄▀█░▄▄█
+            █▄▄██▄▄▄█▄█▄█▄▄▄█
+            ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+        prompt: dike
+    answers_checking_interval: 1
+
+# Subordinate server
+subordintate_server:
+    hostname: 0.0.0.0
+    port: 1234
+    service_name: dike
+
+# Extractor
 extractors:
     strings:
         minimum_string_length: 10
@@ -76,8 +94,8 @@ extractors:
 
 # Database configuration
 database:
-    host: localhost
+    hostname: localhost
     port: 27017
     username: admin
     password: admin
-    database: CODENAME
+    database: dike

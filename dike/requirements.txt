@@ -1,0 +1,10 @@
+riposte==0.4.1
+pymongo==3.11.0
+rpyc==4.1.5
+capstone==4.0.1
+pefile==2019.4.18
+emojis==0.6.0
+tqdm==4.54.1
+Flask==1.1.2
+pypattyrn==1.2
+PyYAML==5.3.1

@@ -1,11 +1,15 @@
-# Custom ones
+# Project-specific
+dike/subordinate/data/extracted_features/*
+!dike/subordinate/data/extracted_features/.gitkeep
+dike/subordinate/data/malware_datasets/*
+!dike/subordinate/data/malware_datasets/.gitkeep
+dike/subordinate/qiling/logs/*
+!dike/subordinate/qiling/logs/.gitkeep
+dike/subordinate/qiling/rootfs/*
+!dike/subordinate/qiling/rootfs/.gitkeep
+
+# Visual Studio Code
 .vscode
-tests/files/*
-!tests/files/.gitkeep
-tests/logs/*
-!tests/logs/.gitkeep
-tests/rootfs/*
-!tests/rootfs/.gitkeep
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
