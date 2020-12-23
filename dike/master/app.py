@@ -11,7 +11,7 @@ if (len(sys.argv) > 1 and sys.argv[1] == "exit"):
     sys.exit(0)
 
 # Get configuration
-config = ConfigurationWorker("../config.yaml")
+config = ConfigurationWorker("../configuration/config.yaml")
 master_config = config.get_configuration_space(
     ConfigurationSpace.MASTER_SERVER)
 subordinate_config = config.get_configuration_space(

@@ -21,7 +21,7 @@ CONFIGURATION = {
 def main():
 
     # Get configuration
-    config = ConfigurationWorker("../config.yaml")
+    config = ConfigurationWorker("../configuration/config.yaml")
     server_config = config.get_configuration_space(
         ConfigurationSpace.SUBORDINATE_SERVER)
 

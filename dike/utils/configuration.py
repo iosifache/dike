@@ -1,6 +1,8 @@
 """Utility functionalities"""
 
 import yaml
+import os
+from pypattyrn.creational.singleton import Singleton
 import typing
 from enum import Enum
 
@@ -13,19 +15,27 @@ class ConfigurationSpace(Enum):
     DATABASE = "database"
 
 
-class ConfigurationWorker:
+class ConfigurationWorker(object, metaclass=Singleton):
     """Singleton class that implements the worker with configuration files.
 
     This class helps working with standard configuration file, by providing
     operations such as opening, parsing and querying.
     """
+    class _Loader(yaml.SafeLoader):
+        """Custom YAML loader supporting other files includes"""
+        def __init__(self, stream):
+            self._root = os.path.split(stream.name)[0]
+            super(ConfigurationWorker._Loader, self).__init__(stream)
 
-    _instance: typing.TypeVar("ConfigurationWorker") = None
+        def include(self, node):
+            filename = os.path.join(self._root, self.construct_scalar(node))
+            with open(filename, "r") as f:
+                return yaml.load(f, ConfigurationWorker._Loader)
+
     _config: typing.Any = None
 
     # TODO: log "{} configuration file imported"
-    def __new__(cls: typing.TypeVar("ConfigurationWorker"),
-                filename: str) -> typing.TypeVar("ConfigurationWorker"):
+    def __init__(self, filename: str) -> typing.TypeVar("ConfigurationWorker"):
         """Creates a new instance
 
         Args:
@@ -39,15 +49,14 @@ class ConfigurationWorker:
         """
         if (filename is None):
             return None
-        if cls._instance is None:
-            cls._instance = super(ConfigurationWorker, cls).__new__(cls)
-            try:
-                with open(filename) as config_file:
-                    cls._config = yaml.load(config_file,
-                                            Loader=yaml.FullLoader)
-            except:
-                raise FileNotFoundError()
-        return cls._instance
+        ConfigurationWorker._Loader.add_constructor(
+            '!include', ConfigurationWorker._Loader.include)
+        try:
+            with open(filename) as config_file:
+                self._config = yaml.load(config_file,
+                                         Loader=ConfigurationWorker._Loader)
+        except:
+            raise FileNotFoundError()
 
     def get_full_configuration(self) -> typing.Any:
         """Gets the configuration stored in the given file.

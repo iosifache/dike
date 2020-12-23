@@ -1,0 +1,225 @@
+Activation Context Reference:
+    - CreateActCtxW
+Authentication Functions:
+    - EncryptMessage
+Configuration Reference:
+    - GetSystemMetrics
+Console Functions:
+    - WriteConsoleA
+Cryptography Functions:
+    - CertControlStore
+    - CertOpenStore
+    - CryptAcquireContextA
+    - CryptAcquireContextW
+    - CryptCreateHash
+    - CryptDecodeObjectEx
+    - CryptDecrypt
+    - CryptEncrypt
+    - CryptExportKey
+    - CryptGenKey
+    - CryptHashData
+    - CryptProtectData
+    - CryptUnprotectData
+    - MessageBoxTimeoutW
+Debugging Functions:
+    - IsDebuggerPresent
+    - MessageBoxTimeoutA
+    - NtGetContextThread
+    - NtReadVirtualMemory
+    - OutputDebugStringA
+    - ReadProcessMemory
+    - SearchPathW
+    - WriteProcessMemory
+Driver Support Routines:
+    - NtEnumerateKey
+    - NtEnumerateValueKey
+    - NtFreeVirtualMemory
+    - NtOpenKey
+    - NtOpenSection
+    - NtQueryDirectoryFile
+    - NtQueryValueKey
+    - NtSetInformationFile
+    - NtSetValueKey
+Dynamic-Link Library Functions:
+    - LdrGetDllHandle
+File Management Functions:
+    - CopyFileA
+    - CopyFileW
+    - DeleteFileW
+    - FindFirstFileExW
+    - GetFileAttributesExW
+    - GetFileAttributesW
+    - GetFileInformationByHandle
+    - GetFileInformationByHandleEx
+    - GetFileSize
+    - GetFileSizeEx
+    - GetFileType
+    - GetShortPathNameW
+    - GetTempPathW
+    - MoveFileWithProgressW
+    - NtCreateFile
+    - NtMapViewOfSection
+    - NtOpenFile
+    - NtReadFile
+    - NtWriteFile
+    - SetEndOfFile
+    - SetFileAttributesW
+    - SetFileInformationByHandle
+    - SetFilePointer
+    - SetFilePointerEx
+Font and Text Functions:
+    - DrawTextExW
+Functions:
+    - CoCreateInstance
+    - CoCreateInstanceEx
+    - CoGetClassObject
+    - CoInitializeEx
+    - CoInitializeSecurity
+    - CoUninitialize
+    - OleInitialize
+HTTP Server API Version 2.0 Functions:
+    - NtDeviceIoControlFile
+Handle and Object Functions:
+    - NtClose
+    - NtDuplicateObject
+IMFSignedLibrary:
+    - LdrGetProcedureAddress
+IP Helper Functions:
+    - GetAdaptersAddresses
+    - GetAdaptersInfo
+    - GetBestInterfaceEx
+Memory Management Functions:
+    - GlobalMemoryStatus
+    - GlobalMemoryStatusEx
+    - NtAllocateVirtualMemory
+    - NtCreateSection
+    - NtProtectVirtualMemory
+Process and Thread Functions:
+    - CreateProcessInternalW
+    - CreateRemoteThread
+    - CreateThread
+    - NtCreateThreadEx
+    - NtDelayExecution
+    - NtOpenProcess
+    - NtOpenThread
+    - NtQueryInformationFile
+    - NtResumeThread
+    - NtTerminateProcess
+Registry Functions:
+    - LookupPrivilegeValueW
+    - NtCreateKey
+    - NtOpenKeyEx
+    - NtQueryKey
+    - RegCloseKey
+    - RegCreateKeyExW
+    - RegDeleteKeyW
+    - RegDeleteValueW
+    - RegEnumKeyExA
+    - RegEnumKeyExW
+    - RegEnumKeyW
+    - RegEnumValueA
+    - RegEnumValueW
+    - RegOpenKeyExA
+    - RegOpenKeyExW
+    - RegQueryInfoKeyA
+    - RegQueryInfoKeyW
+    - RegQueryValueExA
+    - RegQueryValueExW
+    - RegSetValueExA
+    - RegSetValueExW
+Resource Functions:
+    - FindResourceA
+    - FindResourceExW
+    - FindResourceW
+    - LoadResource
+    - SizeofResource
+Service Functions:
+    - OpenSCManagerA
+    - OpenSCManagerW
+    - OpenServiceA
+    - OpenServiceW
+    - StartServiceA
+String Functions:
+    - LoadStringA
+    - LoadStringW
+Structured Exception Handling Functions:
+    - RtlAddVectoredExceptionHandler
+    - SetUnhandledExceptionFilter
+Synchronization Functions:
+    - HttpQueryInfoA
+    - NtCreateMutant
+    - NtOpenMutant
+System Information Functions:
+    - GetComputerNameA
+    - GetComputerNameW
+    - GetNativeSystemInfo
+    - GetSystemDirectoryA
+    - GetSystemDirectoryW
+    - GetSystemInfo
+    - GetSystemWindowsDirectoryW
+    - GetUserNameA
+    - GetUserNameExA
+    - GetUserNameExW
+    - GetUserNameW
+    - NtQuerySystemInformation
+    - RtlDecompressBuffer
+    - listen
+Time Functions:
+    - GetSystemTimeAsFileTime
+    - GetTimeZoneInformation
+    - SetFileTime
+Tool Help Functions:
+    - CreateToolhelp32Snapshot
+    - Module32FirstW
+    - Module32NextW
+    - Process32FirstW
+    - Process32NextW
+    - Thread32First
+    - Thread32Next
+Tools, Best Practices, and Guidance:
+    - LdrUnloadDll
+Using File Mapping:
+    - LdrLoadDll
+WinINet Functions:
+    - HttpOpenRequestA
+    - HttpOpenRequestW
+    - HttpSendRequestA
+    - HttpSendRequestW
+    - InternetCloseHandle
+    - InternetConnectA
+    - InternetConnectW
+    - InternetCrackUrlA
+    - InternetCrackUrlW
+    - InternetOpenA
+    - InternetOpenUrlA
+    - InternetOpenUrlW
+    - InternetOpenW
+    - InternetQueryOptionA
+    - InternetReadFile
+    - InternetSetOptionA
+Windows Networking Functions:
+    - NtUnmapViewOfSection
+Winsock Functions:
+    - GetAddrInfoW
+    - NtDeleteFile
+    - NtQueryAttributesFile
+    - WSARecv
+    - WSASend
+    - WSASocketA
+    - WSASocketW
+    - WSAStartup
+    - accept
+    - bind
+    - closesocket
+    - connect
+    - getaddrinfo
+    - gethostbyname
+    - getsockname
+    - ioctlsocket
+    - recv
+    - select
+    - send
+    - sendto
+    - setsockopt
+    - shutdown
+    - socket

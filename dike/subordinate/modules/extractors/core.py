@@ -53,7 +53,7 @@ class ExtractorMaster:
                 pe_file_needed = True
                 if isinstance(extractor, extractors.OpcodesExtractor):
                     extractor.set_configuration(
-                        self._configuration["opcodes"]["groups"],
+                        self._configuration["opcodes"]["categories"],
                         self._configuration["opcodes"]["min_ignored_percent"])
                 if not isinstance(extractor,
                                   extractors.PECharacteristicsExtractor):
