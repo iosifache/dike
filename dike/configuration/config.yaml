@@ -1,0 +1,42 @@
+---
+
+# Master server
+master_server:
+    cli:
+        banner: |
+            ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+            █░▄▀██▄██░█▀█░▄▄█
+            █░█░██░▄█░▄▀█░▄▄█
+            █▄▄██▄▄▄█▄█▄█▄▄▄█
+            ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+        prompt: dike
+    answers_checking_interval: 1
+
+# Subordinate server
+subordintate_server:
+    hostname: 0.0.0.0
+    port: 1234
+    service_name: dike
+
+# Extractor
+extractors:
+    strings:
+        minimum_string_length: 10
+        minimum_occurances: 1
+    dynamic:
+        qiling_rootfs: tests/rootfs
+        log_folder: tests/logs
+    opcodes:
+        categories: !include opcodes_categories.yaml
+        min_ignored_percent: 0.05
+    apis:
+        categories: !include api_categories.yaml
+        min_ignored_percent: 0.05
+
+# Database configuration
+database:
+    hostname: localhost
+    port: 27017
+    username: admin
+    password: admin
+    database: dike

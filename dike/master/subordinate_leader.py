@@ -23,7 +23,6 @@ class _Connection:
 
 
 class SubordinateLeader(object, metaclass=Singleton):
-
     _service_name: str = None
     _default_port_number: int = -1
     _connections: typing.List[_Connection] = []
