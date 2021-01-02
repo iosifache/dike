@@ -1,50 +1,50 @@
 Arithmetical Operations:
-    - "add"
-    - "inc"
-    - "sub"
-    - "mul"
-    - "imul"
-    - "div"
-    - "idiv"
+    - add
+    - inc
+    - sub
+    - mul
+    - imul
+    - div
+    - idiv
 Logical Operations:
-    - "and"
-    - "or"
-    - "xor"
+    - and
+    - or
+    - xor
 Bit Operations:
-    - "ror"
-    - "rol"
-    - "test"
-    - "bt"
-    - "bsr"
-    - "bsf"
+    - ror
+    - rol
+    - test
+    - bt
+    - bsr
+    - bsf
 Data Transfer:
-    - "mov*"
-    - "lods*"
-    - "xchg"
+    - mov*
+    - lods*
+    - xchg
 Data Dimension Conversion:
-    - "cdq*"
-    - "cbw"
-    - "cwd"
+    - cdq*
+    - cbw
+    - cwd
 Pointers Work:
-    - "lea"
-    - "lds"
-    - "les"
+    - lea
+    - lds
+    - les
 Comparision:
-    - "cmp"
-    - "scas"
+    - cmp
+    - scas
 Jump:
-    - "j*"
+    - j*
 Stack:
-    - "call"
-    - "ret"
-    - "push"
-    - "pop"
+    - call
+    - ret
+    - push
+    - pop
 Input Output:
-    - "out*"
-    - "in"
+    - out*
+    - in
 Boolean Creation:
-    - "set*"
+    - set*
 Others:
-    - "rep"
-    - "nop"
-    - "wait"
+    - rep
+    - nop
+    - wait

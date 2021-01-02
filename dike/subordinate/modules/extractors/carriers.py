@@ -2,23 +2,19 @@ import pefile
 import qiling
 import qiling.const
 import capstone
+import json
 import typing
 
 
-class _OpcodesCategoryFrequency:
+class _GenericCategoryFrequency(dict):
     category_name: str = None
     frequency: float = None
 
     def __init__(self, category_name: str, frequency: float):
-        self.category_name = category_name
-        self.frequency = frequency
+        dict.__init__(self, category_name=category_name, frequency=frequency)
 
 
-class _APIsFrequency:
-    pass
-
-
-class _SectionCharacteristics:
+class _SectionCharacteristics(dict):
     name: str = None
     entropy: float = 1
     raw_size: int = 0
@@ -26,15 +22,17 @@ class _SectionCharacteristics:
 
     def __init__(self, name: str, entropy: float, raw_size: int,
                  virtual_size: int):
-        self.name = name
-        self.entropy = entropy
-        self.raw_size = raw_size
-        self.virtual_size = virtual_size
+        dict.__init__(self,
+                      name=name,
+                      entropy=entropy,
+                      raw_size=raw_size,
+                      virtual_size=virtual_size)
 
 
 class _StaticBucket:
     filename: str = None
     pe_file: pefile.PE = None
+    size: int = -1
     content: bytes = None
     disassambler: capstone.Cs = None
     strings: typing.List[str] = []
@@ -46,7 +44,8 @@ class _StaticBucket:
 
 class _DynamicBucket:
     emulator: qiling.Qiling = None
+    log_file: str = None
     opcodes: typing.List[str] = []
-    opcodes_freqs: typing.List[_OpcodesCategoryFrequency] = []
+    opcodes_freqs: typing.List[_GenericCategoryFrequency] = []
     apis: typing.List[str] = []
-    apis_freqs: typing.List[_APIsFrequency] = []
+    apis_freqs: typing.List[_GenericCategoryFrequency] = []
