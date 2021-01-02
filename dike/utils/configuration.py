@@ -5,6 +5,7 @@ import os
 from pypattyrn.creational.singleton import Singleton
 import typing
 from enum import Enum
+from utils.logger import Logger
 
 
 class ConfigurationSpace(Enum):
@@ -34,7 +35,6 @@ class ConfigurationWorker(object, metaclass=Singleton):
 
     _config: typing.Any = None
 
-    # TODO: log "{} configuration file imported"
     def __init__(self, filename: str) -> typing.TypeVar("ConfigurationWorker"):
         """Creates a new instance
 
@@ -57,6 +57,7 @@ class ConfigurationWorker(object, metaclass=Singleton):
                                          Loader=ConfigurationWorker._Loader)
         except:
             raise FileNotFoundError()
+        Logger.log_success("Configuration file imported")
 
     def get_full_configuration(self) -> typing.Any:
         """Gets the configuration stored in the given file.

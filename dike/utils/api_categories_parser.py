@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 import yaml
+import subordinate.modules.extractors.extractors as extractors
 
 # Constants
-OUTPUT_FILE = "../configuration/api_categories.yaml"
+OUTPUT_FILE = "../configuration/api_categories_normalized.yaml"
 
 # API categories defined on report-parser repository,
 # into the file report-parser/docs/api-categories.txt
@@ -274,8 +275,10 @@ def main():
 
     formatted_categories = dict()
     for category in categories:
+        
         formatted_categories[category] = [
-            function for function in functions
+            extractors.APIsExtractor.normalize_function_name(function) 
+            for function in functions
             if functions[function] == category
         ]
         functions = {

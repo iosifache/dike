@@ -11,10 +11,10 @@ class ModelBuilderService(rpyc.Service):
     ALIASES: list = []
 
     def on_connect(self, connection: rpyc.Connection) -> None:
-        Logger.print_on_screen(":on: Master server is now connected")
+        Logger.log_beginning("Master server is now connected")
 
     def on_disconnect(self, connection: rpyc.Connection) -> None:
-        Logger.print_on_screen(":end: Master server is now disconnected")
+        Logger.log_end("Master server is now disconnected")
 
     def is_busy(self) -> bool:
         return self.busy
@@ -25,7 +25,7 @@ class ModelBuilderService(rpyc.Service):
         self.busy = True
 
         # Print message
-        Logger.print_on_screen(":hammer: Starting a model training")
+        Logger.log_work("Starting a model training")
 
         # Sleep to emulate intensive computin
         time.sleep(10)

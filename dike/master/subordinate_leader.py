@@ -60,25 +60,23 @@ class SubordinateLeader(object, metaclass=Singleton):
             if (service_name.upper() in connection.root.get_service_aliases()):
                 self._connections.append(_Connection(host, port, connection))
                 if (are_info_logged):
-                    Logger.print_on_screen(
-                        ":white_check_mark: Successfully connected to server {}:{}"
-                        .format(host, port))
+                    Logger.log_success(
+                        "Successfully connected to server {}:{}".format(
+                            host, port))
                 return True
             else:
                 return False
         except:
             if (are_info_logged):
-                Logger.print_on_screen(
-                    ":x: Error on connection to server {}:{}".format(
-                        host, port))
+                Logger.log_fail("Error on connection to server {}:{}".format(
+                    host, port))
             return False
 
     def connect_to_all_servers(self, network: str) -> None:
         try:
             new_connections = 0
             addresses = ipaddress.IPv4Network(network)
-            Logger.print_on_screen(
-                ":clock830: Starting to scan the given network")
+            Logger.log_work("Starting to scan the given network")
             progress_bar = tqdm.tqdm(total=len(list(addresses)))
             for ip in addresses:
                 if (self.connect_to_server(str(ip), self._default_port_number,
@@ -87,14 +85,13 @@ class SubordinateLeader(object, metaclass=Singleton):
                 progress_bar.update(1)
             progress_bar.close()
             if (new_connections > 0):
-                Logger.print_on_screen(
-                    ":white_check_mark: Successfully connected to {} servers".
-                    format(new_connections))
+                Logger.log_success(
+                    "Successfully connected to {} servers".format(
+                        new_connections))
             else:
-                Logger.print_on_screen(
-                    ":no_entry_sign: No server to connect to")
+                Logger.log_fail("No server to connect to")
         except:
-            Logger.print_on_screen(":x: Invalid network")
+            Logger.log_fail("Invalid network")
 
     def disconnect_from_server(self,
                                host: str,
@@ -110,13 +107,13 @@ class SubordinateLeader(object, metaclass=Singleton):
                         if connection.host != host and connection.port != port
                     ]
                 if (are_info_logged):
-                    Logger.print_on_screen(
-                        ":white_check_mark: Successfully disconnection from server {}:{}"
-                        .format(host, port))
+                    Logger.log_success(
+                        "Successfully disconnection from server {}:{}".format(
+                            host, port))
                 return True
         if (are_info_logged):
-            Logger.print_on_screen(
-                ":x: No connection with server {}:{}".format(host, port))
+            Logger.log_fail("No connection with server {}:{}".format(
+                host, port))
         return False
 
     def disconnect_from_all_servers(self):
@@ -128,26 +125,24 @@ class SubordinateLeader(object, metaclass=Singleton):
                                                 False)):
                     disconnections += 1
             self._connections.clear()
-            Logger.print_on_screen(
-                ":white_check_mark: Successfully disconnected from {} servers".
-                format(disconnections))
+            Logger.log_success(
+                "Successfully disconnected from {} servers".format(
+                    disconnections))
         else:
-            Logger.print_on_screen(
-                ":no_entry_sign: No server to disconnect from")
+            Logger.log_fail("No server to disconnect from")
 
     def _get_server_status(self, is_busy: bool):
         return "BUSY" if is_busy else "AVAILABLE"
 
     def list_connections(self):
         if (len(self._connections) > 0):
-            Logger.print_on_screen(":link: Active connections are:")
+            Logger.log_connections("Active connections are:")
             for connection in self._connections:
-                Logger.print_on_screen("\t- {}:{} with status {}".format(
+                Logger.log("\t- {}:{} with status {}".format(
                     connection.host, connection.port,
                     self._get_server_status(connection.is_busy)))
         else:
-            Logger.print_on_screen(
-                ":no_entry_sign: No connection at the moment")
+            Logger.log_fail("No connection at the moment")
 
     def get_first_free_server(self) -> _Connection:
         for connection in self._connections:
@@ -168,14 +163,13 @@ class SubordinateLeader(object, metaclass=Singleton):
     def train_model_by_skeleton(self):
         connection = self.get_first_free_server()
         if (connection):
-            Logger.print_on_screen(
-                ":email: Successfully found free server {}:{}".format(
+            Logger.log_new_message(
+                "Successfully found free server {}:{}".format(
                     connection.host, connection.port))
             self.delegate_task_to_server(connection, "train_new_model",
                                          SubordinateLeader.consume_new_model)
         else:
-            Logger.print_on_screen(
-                ":no_entry_sign: No free server can execute the task")
+            Logger.log_fail("No free server can execute the task")
 
     def _consume_new_model(self, async_result: rpyc.AsyncResult) -> None:
         for connection in self._connections:
