@@ -5,10 +5,11 @@ import qiling
 import qiling.const
 import capstone
 import os
+from sklearn.base import BaseEstimator
 from pypattyrn.creational.singleton import Singleton
 import typing
-import subordinate.modules.extractors.extractors as extractors
-import subordinate.modules.extractors.carriers as carriers
+import subordinate.modules.extractors as extractors
+import subordinate.modules.carriers as carriers
 
 QILING_LOG_EXTENSION = "qlog"
 
@@ -24,12 +25,12 @@ class ExtractorMaster(object, metaclass=Singleton):
         self._configuration = configuration
         self._filename = filename
 
-    def attach(self, extractor: extractors._Extractor) -> bool:
+    def attach(self, extractor: extractors._Extractor) -> None:
         self._extractors.append(extractor)
 
     @staticmethod
-    def hook_instruction(qiling_instance: qiling.Qiling, address: int,
-                         size: int, others: tuple) -> None:
+    def _hook_instruction(qiling_instance: qiling.Qiling, address: int,
+                          size: int, others: tuple) -> None:
         instructions = qiling_instance.mem.read(address, size)
         disassambler = others[0]
         list_of_opcodes = others[1]
@@ -38,16 +39,17 @@ class ExtractorMaster(object, metaclass=Singleton):
 
     @staticmethod
     def _check_extractor_type(extractor: extractors._Extractor,
-                              class_instance: extractors._Extractor):
+                              class_instance: extractors._Extractor) -> bool:
         return (type(extractor).__name__ == type(class_instance).__name__)
 
-    def squeeze(self) -> dict:
+    def squeeze(self) -> list:
         content_needed = False
         pe_file_needed = False
         disassambler_needed = False
         emulator_needed = False
 
         # Verify what elements are needed and set configuration for each of them
+        pe_characteristics_present = False
         for extractor in self._extractors:
             if ExtractorMaster._check_extractor_type(
                     extractor, extractors.StringsExtractor()):
@@ -60,23 +62,14 @@ class ExtractorMaster(object, metaclass=Singleton):
             else:
                 # PE file parser needed for all extractor, except the string one
                 pe_file_needed = True
-                if ExtractorMaster._check_extractor_type(
-                        extractor, extractors.OpcodesExtractor()):
-                    extractor.set_configuration(
-                        self._configuration["opcodes"]["categories"],
-                        self._configuration["opcodes"]["min_ignored_percent"])
                 if not ExtractorMaster._check_extractor_type(
                         extractor, extractors.PECharacteristicsExtractor()):
                     # Emulator and disassambler needed for extractors based on
                     # dynamic analysis
                     emulator_needed = True
                     disassambler_needed = True
-
-                    if ExtractorMaster._check_extractor_type(
-                            extractor, extractors.APIsExtractor()):
-                        extractor.set_configuration(
-                            self._configuration["apis"]["categories"],
-                            self._configuration["apis"]["min_ignored_percent"])
+                else:
+                    pe_characteristics_present = True
 
         # Initialize needed elements
         if content_needed or emulator_needed:
@@ -116,7 +109,7 @@ class ExtractorMaster(object, metaclass=Singleton):
                 filename + "." + QILING_LOG_EXTENSION)
 
             # Hook on each executed instruction and API call
-            emulator.hook_code(ExtractorMaster.hook_instruction,
+            emulator.hook_code(ExtractorMaster._hook_instruction,
                                (disassambler, self._dynamic_bucket.opcodes))
 
             # Run emulator
@@ -126,30 +119,24 @@ class ExtractorMaster(object, metaclass=Singleton):
             except:
                 pass
 
-        # Use each extractor and save the results
-        attributes = {"filename": self._filename}
+        # Apply each extractor
         for extractor in self._extractors:
-
             extractor.extract(self._static_bucket, self._dynamic_bucket)
 
-            if ExtractorMaster._check_extractor_type(
-                    extractor, extractors.StringsExtractor()):
-                attributes["strings"] = self._static_bucket.strings
-            elif ExtractorMaster._check_extractor_type(
-                    extractor, extractors.PECharacteristicsExtractor()):
-                attributes["sections"] = self._static_bucket.sections
-                attributes[
-                    "imported_libraries"] = self._static_bucket.imported_libraries
-                attributes[
-                    "imported_functions"] = self._static_bucket.imported_functions
-                attributes[
-                    "exported_functions"] = self._static_bucket.exported_functions
-            elif ExtractorMaster._check_extractor_type(
-                    extractor, extractors.OpcodesExtractor()):
-                attributes[
-                    "opcodes_categories"] = self._dynamic_bucket.opcodes_freqs
-            elif ExtractorMaster._check_extractor_type(
-                    extractor, extractors.APIsExtractor()):
-                attributes["api_categories"] = self._dynamic_bucket.apis_freqs
+        # Remove from strings the imported libraries / functions if an
+        # PECharacteristicExtractor was used
+        if pe_characteristics_present:
+            self._static_bucket.strings = [
+                found_string for found_string in self._static_bucket.strings if
+                (found_string not in self._static_bucket.imported_libraries and
+                 found_string not in self._static_bucket.imported_functions)
+            ]
 
-        return attributes
+        # Squeeze data from each extractor
+        extracted_features = []
+        for extractor in self._extractors:
+            extractor_features = extractor.squeeze(self._static_bucket,
+                                                   self._dynamic_bucket)
+            extracted_features.extend(extractor_features)
+
+        return extracted_features

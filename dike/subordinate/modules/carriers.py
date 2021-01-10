@@ -2,16 +2,7 @@ import pefile
 import qiling
 import qiling.const
 import capstone
-import json
 import typing
-
-
-class _GenericCategoryFrequency(dict):
-    category_name: str = None
-    frequency: float = None
-
-    def __init__(self, category_name: str, frequency: float):
-        dict.__init__(self, category_name=category_name, frequency=frequency)
 
 
 class _SectionCharacteristics(dict):
@@ -46,6 +37,4 @@ class _DynamicBucket:
     emulator: qiling.Qiling = None
     log_file: str = None
     opcodes: typing.List[str] = []
-    opcodes_freqs: typing.List[_GenericCategoryFrequency] = []
     apis: typing.List[str] = []
-    apis_freqs: typing.List[_GenericCategoryFrequency] = []

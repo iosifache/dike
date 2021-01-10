@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import yaml
-import subordinate.modules.extractors.extractors as extractors
+import subordinate.modules.extractors as extractors
 
 # Constants
 OUTPUT_FILE = "../configuration/api_categories_normalized.yaml"
