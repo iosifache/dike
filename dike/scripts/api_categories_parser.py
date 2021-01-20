@@ -1,14 +1,24 @@
 #!/usr/bin/env python3
+"""Script for parsing a mapping Windows API functions - categories and for
+dumping, into a custom format, into a YAML file
+
+Usage:
+    api_categories_parser.py CONFIGURATION_FILE
+
+API categories and the mapping are defines on the open-source repository
+report-parser.
+"""
 
 import yaml
-import subordinate.modules.extractors as extractors
+import os
+import sys
+import subordinate.modules.features_extraction.extractors as extractors
+from utils.configuration import ConfigurationWorker, ConfigurationSpace
+from utils.logger import Logger, LoggerMessageType
 
 # Constants
 OUTPUT_FILE = "../configuration/api_categories_normalized.yaml"
-
-# API categories defined on report-parser repository,
-# into the file report-parser/docs/api-categories.txt
-categories = [
+CATEGORIES = [
     "Activation Context Reference", "Authentication Functions",
     "Configuration Reference", "Console Functions", "Cryptography Functions",
     "Debugging Functions", "Driver Support Routines",
@@ -24,8 +34,6 @@ categories = [
     "WinINet Functions", "Windows Networking Functions", "Winsock Functions"
 ]
 
-# Mapping for API function to a specific category defined on report-parser
-# repository, into the file report-parser/docs/classify.json
 functions = {
     "CertControlStore": "Cryptography Functions",
     "CertOpenStore": "Cryptography Functions",
@@ -271,15 +279,32 @@ class CustomDumper(yaml.Dumper):
 
 
 def main():
-    global categories, functions
+    global CATEGORIES, functions
+
+    # Check arguments
+    if not (len(sys.argv) == 2 and os.path.isfile(sys.argv[1])):
+        Logger.log("Invalid (number of) arguments", LoggerMessageType.FAIL)
+        exit(1)
+
+    # Get parameter
+    configuration_file = os.path.abspath(sys.argv[1])
+
+    # Read configuration
+    all_config = ConfigurationWorker(configuration_file)
+    config = all_config.get_configuration_space(ConfigurationSpace.EXTRACTORS)
+
+    # Create an extractor for API calls to be able to use the normalization
+    # method
+    api_extractor = extractors.APIsExtractor()
+    api_extractor.set_configuration(config["apis"]["ignored_prefixes"],
+                                    config["apis"]["ignored_suffixes"])
 
     formatted_categories = dict()
-    for category in categories:
-        
+    for category in CATEGORIES:
+
         formatted_categories[category] = [
-            extractors.APIsExtractor.normalize_function_name(function) 
-            for function in functions
-            if functions[function] == category
+            api_extractor.normalize_function_name(function)
+            for function in functions if functions[function] == category
         ]
         functions = {
             function: functions[function]

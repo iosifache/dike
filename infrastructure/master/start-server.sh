@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Wait the volume to be mounted and install the requirements
+# Wait for the volume to be mounted and install the requirements
 until cd /dike/dike && pip install -r requirements.txt
 do
     echo "Retrying pip install.."

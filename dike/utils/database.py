@@ -1,5 +1,3 @@
-""" Database functionality"""
-
 import pymongo
 
 
@@ -18,14 +16,14 @@ class DatabaseWorker:
 
     def __init__(self, host: str, port: int, username: str, password: str,
                  database: str):
-        """Initializes the object.
+        """Initializes the DatabaseWorker instance.
 
         Args:
-            host: Domain or IP address of the host
-            port: Port address
-            username: Username for authentication
-            password: Password for authentication
-            database: Used database
+            host (str): Domain or IP address of the host
+            port (int): Port number
+            username (str): Username for authentication
+            password (str): Password for authentication
+            database (str): Used database
         """
         if (host is None or (port < 0 or port > 65535) or username is None
                 or password is None or database is None):
@@ -49,10 +47,10 @@ class DatabaseWorker:
         """Sets a collection to be used in next operations.
 
         Args:
-            collection: The name of the collection
+            collection (str): Name of the collection
 
         Returns:
-            A boolean that indicates if the collection could be used
+            bool: Boolean indicating if the collection could be used
         """
         if (collection == self._collection):
             return True
@@ -64,9 +62,9 @@ class DatabaseWorker:
 
     def query_all(self) -> pymongo.cursor.Cursor:
         """Query all collections from current collection.
-        
+
         Returns:
-            Cursor to the iterate through Mongo query results
+            pymongo.cursor.Cursor: Cursor to the iterate through Mongo query results
         """
         return self._collection.find({})
 
@@ -74,10 +72,10 @@ class DatabaseWorker:
         """Queries the current collection using a specific query.
 
         Args:
-            query: The query used to filter the collection entries
-        
+            query (dict): Query used to filter the collection entries
+
         Returns:
-            The first object finded with the given query
+            dict: First object found with the given query
         """
         return self._collection.find_one(query)
 
@@ -85,10 +83,10 @@ class DatabaseWorker:
         """Inserts an object into current collection.
 
         Args:
-            new: The inserted object
-        
+            new (dict): Inserted object
+
         Returns:
-            The status of the insertion operation
+            bool: Status of the insertion operation
         """
         return self._collection.insert_one(new).acknowledged
 
@@ -96,10 +94,10 @@ class DatabaseWorker:
         """Inserts multiple values into current collection.
 
         Args:
-            many: List of inserted objects
-        
+            many (list): List of inserted objects
+
         Returns:
-            The status of the insertion operation
+            bool: Status of the insertion operation
         """
         return self._collection.insert_many(many).acknowledged
 
@@ -107,7 +105,7 @@ class DatabaseWorker:
         """Deletes all values from the current collection.
 
         Returns:
-            The status of the deletion operation
+            bool: Status of the deletion operation
         """
         return self._collection.delete_many({}).acknowledged
 
@@ -115,9 +113,10 @@ class DatabaseWorker:
         """Updates documents from current collection.
 
         Args:
-            selector: The query used to filter the updated documents
-        
+            selector (dict): Query used to filter the updated documents
+            modifier (dict): Modifier
+
         Returns:
-            The status of the update operation
+            bool: Status of the update operation
         """
         return (self._collection.update(selector, modifier)["ok"] == 1)
