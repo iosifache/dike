@@ -1,12 +1,16 @@
 # Project-specific
+dike/subordinate/data/custom_datasets/*
+!dike/subordinate/data/custom_datasets/.gitkeep
 dike/subordinate/data/extracted_features/*
 !dike/subordinate/data/extracted_features/.gitkeep
 dike/subordinate/data/malware_datasets/*
 !dike/subordinate/data/malware_datasets/.gitkeep
-dike/subordinate/qiling/logs/*
-!dike/subordinate/qiling/logs/.gitkeep
-dike/subordinate/qiling/rootfs/*
-!dike/subordinate/qiling/rootfs/.gitkeep
+dike/subordinate/data/qiling/logs/*
+!dike/subordinate/data/qiling/logs/.gitkeep
+dike/subordinate/data/qiling/rootfs/*
+!dike/subordinate/data/qiling/rootfs/.gitkeep
+dike/configuration/user/secrets.yaml
+NOTES.md
 
 # Visual Studio Code
 .vscode

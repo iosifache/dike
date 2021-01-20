@@ -1,29 +1,28 @@
-"""Utility functionalities"""
-
 import yaml
 import os
 from pypattyrn.creational.singleton import Singleton
 import typing
 from enum import Enum
-from utils.logger import Logger
+from utils.logger import Logger, LoggedMessageType
 
 
 class ConfigurationSpace(Enum):
     """Enumeration for available configuration spaces."""
-    EXTRACTORS = "extractors"
     MASTER_SERVER = "master_server"
     SUBORDINATE_SERVER = "subordintate_server"
+    EXTRACTORS = "extractors"
+    DATASET_BUILDER = "dataset_builder"
     DATABASE = "database"
+    SECRETS = "secrets"
 
 
 class ConfigurationWorker(object, metaclass=Singleton):
     """Singleton class that implements the worker with configuration files.
 
-    This class helps working with standard configuration file, by providing
-    operations such as opening, parsing and querying.
+    This class helps to work with the standard configuration file, by providing
+    operations such as opening, parsing, and querying.
     """
     class _Loader(yaml.SafeLoader):
-        """Custom YAML loader supporting other files includes"""
         def __init__(self, stream):
             self._root = os.path.split(stream.name)[0]
             super(ConfigurationWorker._Loader, self).__init__(stream)
@@ -35,17 +34,14 @@ class ConfigurationWorker(object, metaclass=Singleton):
 
     _config: typing.Any = None
 
-    def __init__(self, filename: str) -> typing.TypeVar("ConfigurationWorker"):
-        """Creates a new instance
+    def __init__(self, filename: str):
+        """Initializes the ConfigurationWorker instance.
 
         Args:
-            filename: Name of the configuration file
+            filename (str): Name of the configuration file
 
         Raises:
             FileNotFoundError: File does not exists
-
-        Returns:
-            Instance of the class
         """
         if (filename is None):
             return None
@@ -57,13 +53,13 @@ class ConfigurationWorker(object, metaclass=Singleton):
                                          Loader=ConfigurationWorker._Loader)
         except:
             raise FileNotFoundError()
-        Logger.log_success("Configuration file imported")
+        Logger.log("Configuration file imported", LoggedMessageType.SUCCESS)
 
     def get_full_configuration(self) -> typing.Any:
         """Gets the configuration stored in the given file.
 
         Returns:
-            A configuration object, represented by the given YAML
+            typing.Any: Configuration object, represented by the given YAML
         """
         return self._config
 
@@ -71,9 +67,10 @@ class ConfigurationWorker(object, metaclass=Singleton):
         """Gets a collection of configurations from a specific space.
 
         Args:
-            space: The configuration space that will be used for filtering
+            space (ConfigurationSpace): Configuration space that will be used
+                                        for filtering
 
         Returns:
-            A subset of the full configuration object
+            typing.Any: Subset of the full configuration object
         """
         return self._config[space.value]

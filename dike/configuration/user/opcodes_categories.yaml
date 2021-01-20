@@ -18,11 +18,11 @@ Bit Operations:
     - bsr
     - bsf
 Data Transfer:
-    - mov*
-    - lods*
+    - "mov*"
+    - "lods*"
     - xchg
 Data Dimension Conversion:
-    - cdq*
+    - "cdq*"
     - cbw
     - cwd
 Pointers Work:
@@ -33,17 +33,17 @@ Comparision:
     - cmp
     - scas
 Jump:
-    - j*
+    - "j*"
 Stack:
     - call
     - ret
     - push
     - pop
 Input Output:
-    - out*
+    - "out*"
     - in
 Boolean Creation:
-    - set*
+    - "set*"
 Others:
     - rep
     - nop

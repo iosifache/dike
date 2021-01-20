@@ -1,6 +1,5 @@
 ---
 
-# Master server
 master_server:
     cli:
         banner: |
@@ -12,31 +11,39 @@ master_server:
         prompt: dike
     answers_checking_interval: 1
 
-# Subordinate server
 subordintate_server:
     hostname: 0.0.0.0
     port: 1234
     service_name: dike
 
-# Extractor
 extractors:
     strings:
         minimum_string_length: 10
         minimum_occurances: 1
-    dynamic:
-        qiling_rootfs: /home/iosifache/Desktop/Projects/dike/dike/subordinate/qiling/rootfs
-        log_folder: /home/iosifache/Desktop/Projects/dike/dike/subordinate/qiling/logs
     opcodes:
         categories: !include opcodes_categories.yaml
         min_ignored_percent: 0.05
     apis:
         categories: !include api_categories.yaml
         min_ignored_percent: 0.05
+        ignored_prefixes:
+            - Rtl
+            - Csr
+            - Dbg
+            - Ldr
+            - Nt
+        ignored_suffixes:
+            - Ex
+            - ExEx
+            - A
+            - W
 
-# Database configuration
+dataset_builder:
+    malware_categories: !include malware_categories.yaml
+
 database:
     hostname: localhost
     port: 27017
-    username: admin
-    password: admin
     database: dike
+
+secrets: !include secrets.yaml
