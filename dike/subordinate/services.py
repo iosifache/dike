@@ -17,12 +17,24 @@ class SubordinateService(rpyc.Service):
     _busy_mutex: Lock = Lock()
     _malware_families: dict = {}
     _malware_benign_vote_ratio: int = 1
+    _min_ignored_percent: float = 0
 
     def __init__(self, new_alias: str, malware_families: dict,
-                 malware_benign_vote_ratio: int) -> None:
+                 malware_benign_vote_ratio: int,
+                 min_ignored_percent: float) -> None:
+        """Initalizes the SubordinateService instance.
+
+        For detailed explanation of the parameters not mentioned, see the
+        documentation of the DataFolderScanner constructor and
+        DataFolderScanner.start_scanning method.
+
+        Args:
+            new_alias (str): Alias used by the RPC service
+        """
         self.ALIASES.append(new_alias)
         self._malware_families = malware_families
         self._malware_benign_vote_ratio = malware_benign_vote_ratio
+        self._min_ignored_percent = min_ignored_percent
 
     # pylint: disable=unused-argument
     def on_connect(self, connection: rpyc.Connection) -> None:
@@ -51,15 +63,12 @@ class SubordinateService(rpyc.Service):
         """
         return self._busy
 
-    def update_malware_labels(self, malware_families: dict,
-                              malware_benign_vote_ratio: int) -> None:
+    def update_malware_labels(self) -> None:
         """Updates the labels of the malware.
-
-        For detailed explanation of the parameters, see the documentation of the
-        DataFolderScanner.update_malware_labels method.
         """
         DataFolderScanner.update_malware_labels(
-            self._malware_families, self._malware_benign_vote_ratio)
+            self._malware_families, self._malware_benign_vote_ratio,
+            self._min_ignored_percent)
 
     def start_data_scanning(self,
                             malware_folder: bool,

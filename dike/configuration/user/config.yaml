@@ -24,12 +24,12 @@ extractors:
         categories: !include opcodes_categories.yaml
         allow_multiple_categories: 1
         verbose: True
-        min_ignored_percent: 0.05
+        min_ignored_percent: 0.03
     apis:
         categories: !include api_categories.yaml
         allow_multiple_categories: 1
         verbose: True
-        min_ignored_percent: 0.05
+        min_ignored_percent: 0.03
         ignored_prefixes:
             - Rtl
             - Csr
@@ -51,6 +51,7 @@ preprocessors:
 dataset_builder:
     malware_families: !include malware_families.yaml
     malware_benign_vote_ratio: 2
+    min_ignored_percent: 0.03
 
 database:
     hostname: localhost

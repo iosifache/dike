@@ -20,7 +20,7 @@ def main():
     """Main function"""
 
     # Get configuration
-    config = ConfigurationWorker("configuration/user/config.yaml")
+    config = ConfigurationWorker("../configuration/user/config.yaml")
     server_config = config.get_configuration_space(
         ConfigurationSpace.SUBORDINATE_SERVER)
     dataset_builder_config = config.get_configuration_space(
@@ -29,7 +29,8 @@ def main():
     # Create new service, server and start the server
     service = classpartial(SubordinateService, server_config["service_name"],
                            dataset_builder_config["malware_families"],
-                           dataset_builder_config["malware_benign_vote_ratio"])
+                           dataset_builder_config["malware_benign_vote_ratio"],
+                           dataset_builder_config["min_ignored_percent"])
     server = ThreadPoolServer(service,
                               hostname=server_config["hostname"],
                               port=server_config["port"],

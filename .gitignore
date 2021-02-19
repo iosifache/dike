@@ -2,6 +2,10 @@
 dike/subordinate/data/datasets/custom/*
 !dike/subordinate/data/datasets/custom/.gitkeep
 dike/subordinate/data/datasets/full/*
+!dike/subordinate/data/datasets/full/benign
+!dike/subordinate/data/datasets/full/malware
+dike/subordinate/data/datasets/full/benign/*
+dike/subordinate/data/datasets/full/malware/*
 !dike/subordinate/data/datasets/full/benign/.gitkeep
 !dike/subordinate/data/datasets/full/malware/.gitkeep
 
