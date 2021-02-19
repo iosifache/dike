@@ -1,24 +1,15 @@
-import re
-import collections
 import abc
+import collections
+import re
 import typing
-from enum import Enum
+
 import subordinate.modules.features_extraction.carriers as carriers
-from subordinate.modules.preprocessors import PreprocessorsTypes
 from configuration.dike import DikeConfig
+from subordinate.modules.features_extraction.types import FeatureTypes
+from subordinate.modules.preprocessing.types import PreprocessorsTypes
 
 
-class FeatureTypes(Enum):
-    """Enumeration for all possible types of an extracted feature"""
-    INTEGER = 0
-    FLOAT = 1
-    STRING = 2
-    INTEGER_ARRAY = 10
-    FLOAT_ARRAY = 11
-    STRING_ARRAY = 12
-
-
-class _Extractor(abc.ABC):
+class Extractor(abc.ABC):
     """Class modeling the extractors standard behavior
 
     The types of the extracted features are indicated in the return value of
@@ -36,7 +27,7 @@ class _Extractor(abc.ABC):
             typing.List[typing.Tuple[str, FeatureTypes]]: List of mentioned
                                                           types
         """
-        pass
+        return
 
     @abc.abstractstaticmethod
     def get_supported_preprocessors(
@@ -47,42 +38,41 @@ class _Extractor(abc.ABC):
             typing.List[typing.List[PreprocessorsTypes]]: List of mentioned
                                                           preprocessors
         """
-        pass
+        return
 
     @abc.abstractmethod
-    def extract(self, static_bucket: carriers._StaticBucket,
-                dynamic_bucket: carriers._DynamicBucket) -> None:
+    def extract(self, static_bucket: carriers.StaticBucket,
+                dynamic_bucket: carriers.DynamicBucket) -> None:
         """Populates the given buckets with the features obtained by the
         extractor.
 
         Args:
-            static_bucket (carriers._StaticBucket): Storage for static analysis
+            static_bucket (carriers.StaticBucket): Storage for static analysis
                                                     results
-            dynamic_bucket (carriers._DynamicBucket): Storage for dynamic
+            dynamic_bucket (carriers.DynamicBucket): Storage for dynamic
                                                       analysis results
         """
-        pass
+        return
 
     @abc.abstractmethod
     def squeeze(
-            self, static_bucket: carriers._StaticBucket,
-            dynamic_bucket: carriers._DynamicBucket
-    ) -> typing.List[typing.Any]:
+            self, static_bucket: carriers.StaticBucket,
+            dynamic_bucket: carriers.DynamicBucket) -> typing.List[typing.Any]:
         """Returns the extracted features.
 
         Args:
-            static_bucket (carriers._StaticBucket): Storage for static analysis
+            static_bucket (carriers.StaticBucket): Storage for static analysis
                                                     results
-            dynamic_bucket (carriers._DynamicBucket): Storage for dynamic
+            dynamic_bucket (carriers.DynamicBucket): Storage for dynamic
                                                       analysis results
 
         Returns:
             typing.List[typing.List]: List of the extracted features
         """
-        pass
+        return
 
 
-class StringsExtractor(_Extractor):
+class StaticStrings(Extractor):
     """Class extracting printable characters sequences
 
     It iterates through the file content and search for sequences of printable
@@ -127,8 +117,8 @@ class StringsExtractor(_Extractor):
         chars[ord('\t')] = "\t"
         return "".join(chars).encode("utf-8")
 
-    def extract(self, static_bucket: carriers._StaticBucket,
-                dynamic_bucket: carriers._DynamicBucket) -> None:
+    def extract(self, static_bucket: carriers.StaticBucket,
+                dynamic_bucket: carriers.DynamicBucket) -> None:
         """Same as the corresponding method of the parent class"""
         all_strings = static_bucket.content.translate(
             self._get_printable_chars()).split(b'\0')
@@ -146,16 +136,15 @@ class StringsExtractor(_Extractor):
         static_bucket.strings = all_strings
 
     def squeeze(
-            self, static_bucket: carriers._StaticBucket,
-            dynamic_bucket: carriers._DynamicBucket
-    ) -> typing.List[typing.Any]:
+            self, static_bucket: carriers.StaticBucket,
+            dynamic_bucket: carriers.DynamicBucket) -> typing.List[typing.Any]:
         """Same as the corresponding method of the parent class"""
         return [static_bucket.strings]
 
 
-class PECharacteristicsExtractor(_Extractor):
+class StaticPECharacteristics(Extractor):
     """Class extracting the characteristics of the executable
-    
+
     Extracted features are:
     - executable size,
     - imported libraries,
@@ -193,8 +182,8 @@ class PECharacteristicsExtractor(_Extractor):
             [PreprocessorsTypes.K_BINS_DISCRETIZER]
         ]
 
-    def extract(self, static_bucket: carriers._StaticBucket,
-                dynamic_bucket: carriers._DynamicBucket) -> None:
+    def extract(self, static_bucket: carriers.StaticBucket,
+                dynamic_bucket: carriers.DynamicBucket) -> None:
         """Same as the corresponding method of the parent class"""
         imported_libraries = []
         imported_functions = []
@@ -203,21 +192,27 @@ class PECharacteristicsExtractor(_Extractor):
         size = static_bucket.pe_file.OPTIONAL_HEADER.SizeOfHeaders
         for section in static_bucket.pe_file.sections:
             sections.append(
-                carriers._SectionCharacteristics(section.Name.decode("utf-8"),
-                                                 section.get_entropy(),
-                                                 section.Misc_VirtualSize,
-                                                 section.SizeOfRawData))
+                carriers.SectionCharacteristics(
+                    section.Name.decode("utf-8", "ignore"),
+                    section.get_entropy(), section.Misc_VirtualSize,
+                    section.SizeOfRawData))
             size += section.SizeOfRawData
         if hasattr(static_bucket.pe_file, "DIRECTORY_ENTRY_IMPORT"):
             # Member exists in the pefile structure pylint: disable=no-member
             for import_entry in static_bucket.pe_file.DIRECTORY_ENTRY_IMPORT:
-                imported_libraries.append(import_entry.dll.decode("utf-8"))
+                library_name = import_entry.dll.decode("utf-8")
+                library_name = re.sub(".dll",
+                                      "",
+                                      library_name,
+                                      flags=re.IGNORECASE)
+                imported_libraries.append(library_name)
                 for function_entry in import_entry.imports:
                     imported_functions.append(
                         function_entry.name.decode("utf-8"))
         if hasattr(static_bucket.pe_file, "DIRECTORY_ENTRY_EXPORT"):
             # Member exists in the pefile structure pylint: disable=no-member
-            for export_entry in static_bucket.pe_file.DIRECTORY_ENTRY_EXPORT.symbols:
+            for export_entry in \
+                static_bucket.pe_file.DIRECTORY_ENTRY_EXPORT.symbols:
                 exported_functions.append(export_entry.name.decode("utf-8"))
         static_bucket.size = size
         static_bucket.sections = sections
@@ -226,9 +221,8 @@ class PECharacteristicsExtractor(_Extractor):
         static_bucket.exported_functions = exported_functions
 
     def squeeze(
-            self, static_bucket: carriers._StaticBucket,
-            dynamic_bucket: carriers._DynamicBucket
-    ) -> typing.List[typing.Any]:
+            self, static_bucket: carriers.StaticBucket,
+            dynamic_bucket: carriers.DynamicBucket) -> typing.List[typing.Any]:
         """Same as the corresponding method of the parent class"""
         return [
             static_bucket.size, static_bucket.imported_libraries,
@@ -240,7 +234,7 @@ class PECharacteristicsExtractor(_Extractor):
         ]
 
 
-class OpcodesExtractor(_Extractor):
+class DynamicOpcodes(Extractor):
     """Class extracting the executed opcodes
 
     This extractor runs the executable into a controlled environment (Qemu, via
@@ -263,20 +257,19 @@ class OpcodesExtractor(_Extractor):
             PreprocessorsTypes.GROUP_COUNTER
         ]]
 
-    def extract(self, static_bucket: carriers._StaticBucket,
-                dynamic_bucket: carriers._DynamicBucket) -> None:
+    def extract(self, static_bucket: carriers.StaticBucket,
+                dynamic_bucket: carriers.DynamicBucket) -> None:
         """Same as the corresponding method of the parent class"""
-        pass
+        return
 
     def squeeze(
-            self, static_bucket: carriers._StaticBucket,
-            dynamic_bucket: carriers._DynamicBucket
-    ) -> typing.List[typing.Any]:
+            self, static_bucket: carriers.StaticBucket,
+            dynamic_bucket: carriers.DynamicBucket) -> typing.List[typing.Any]:
         """Same as the corresponding method of the parent class"""
         return [dynamic_bucket.opcodes]
 
 
-class APIsExtractor(_Extractor):
+class DynamicAPIs(Extractor):
     """Class extracting the called Windows API functions
 
     As the opcodes extractor, it runs the program into a controlled environment
@@ -333,13 +326,13 @@ class APIsExtractor(_Extractor):
             str: Normalized name of the function
         """
         for prefix in self._ignored_prefixes:
-            name = APIsExtractor._remove_prefix(name, prefix)
+            name = DynamicAPIs._remove_prefix(name, prefix)
         for suffix in self._ignored_suffixes:
-            name = APIsExtractor._remove_suffix(name, suffix)
+            name = DynamicAPIs._remove_suffix(name, suffix)
         return name
 
-    def extract(self, static_bucket: carriers._StaticBucket,
-                dynamic_bucket: carriers._DynamicBucket) -> None:
+    def extract(self, static_bucket: carriers.StaticBucket,
+                dynamic_bucket: carriers.DynamicBucket) -> None:
         """Same as the corresponding method of the parent class"""
         # Get the API calls if these are not already set
         if not dynamic_bucket.apis:
@@ -352,8 +345,7 @@ class APIsExtractor(_Extractor):
                             self.normalize_function_name(api_calls.group(1)))
 
     def squeeze(
-            self, static_bucket: carriers._StaticBucket,
-            dynamic_bucket: carriers._DynamicBucket
-    ) -> typing.List[typing.Any]:
+            self, static_bucket: carriers.StaticBucket,
+            dynamic_bucket: carriers.DynamicBucket) -> typing.List[typing.Any]:
         """Same as the corresponding method of the parent class"""
         return [dynamic_bucket.apis]

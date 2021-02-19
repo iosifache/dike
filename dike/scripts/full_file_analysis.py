@@ -1,23 +1,26 @@
 #!/usr/bin/env python3
-"""Script for applying extractors to a given file
+"""Script for applying extractors to a given file.
 
 Usage:
     full_file_analysis.py EXECUTABLE_FILE CONFIGURATION_FILE EXTRACTORS
 
-The parameter EXTRACTORS is a sequence of letters that denote the extractors 
+The parameter EXTRACTORS is a sequence of letters that denote the extractors
 used for file analysis. These letters can be:
-- "S" for strings;
-- "P" for PE characteristics;
-- "O" for opcodes; and
-- "A" for API calls.
+- static analysis
+    - "S" for strings
+    - "P" for PE characteristics
+- dynamic analysis
+    - "O" for opcodes
+    - "A" for API calls.
 """
 
 import os
 import sys
+
 import subordinate.modules.features_extraction.core as extraction_core
-import subordinate.modules.features_extraction.extractors as extractors
-from utils.configuration import ConfigurationWorker, ConfigurationSpace
-from utils.logger import Logger, LoggerMessageType
+from subordinate.modules.features_extraction.types import ExtractorsType
+from utils.configuration import ConfigurationSpace, ConfigurationWorker
+from utils.logger import LoggedMessageType, Logger
 
 
 def _check_extractors_string(string: str) -> bool:
@@ -28,12 +31,14 @@ def _check_extractors_string(string: str) -> bool:
 
 
 def main():
+    """Main function
+    """
 
     # Check arguments
     if not (len(sys.argv) == 4 and os.path.isfile(sys.argv[1])
             and os.path.isfile(sys.argv[2])
             and _check_extractors_string(sys.argv[3])):
-        Logger.log("Invalid (number of) arguments", LoggerMessageType.FAIL)
+        Logger.log("Invalid (number of) arguments", LoggedMessageType.FAIL)
         exit(1)
 
     # Get parameters
@@ -46,26 +51,26 @@ def main():
     config = all_config.get_configuration_space(ConfigurationSpace.EXTRACTORS)
 
     # Create master and attach extractors
-    master = extraction_core.ExtractorMaster(config, executable_file)
+    master = extraction_core.ExtractionCore(config, executable_file)
     for extractor_id in extractors_string:
-        # Create the extractor
-        extractor = None
+        # Get the extractor type
+        extractor_type = None
         if extractor_id == "S":
-            extractor = extractors.StringsExtractor()
+            extractor_type = ExtractorsType.STATIC_STRINGS
         elif extractor_id == "P":
-            extractor = extractors.PECharacteristicsExtractor()
+            extractor_type = ExtractorsType.STATIC_PE_CHARACTERISTICS
         elif extractor_id == "O":
-            extractor = extractors.OpcodesExtractor()
+            extractor_type = ExtractorsType.DYNAMIC_OPCODES
         elif extractor_id == "A":
-            extractor = extractors.APIsExtractor()
+            extractor_type = ExtractorsType.DYNAMIC_APIS
 
-        # Attach the extractor
-        master.attach(extractor)
+        # Attach an extractor by type
+        master.attach(extractor_type)
 
     # Squeeze and log attributes
     attributes = master.squeeze()
     Logger.log("Extracted attributes from file are: \n{}".format(attributes),
-               LoggerMessageType.SUCCESS)
+               LoggedMessageType.SUCCESS)
 
 
 if __name__ == "__main__":

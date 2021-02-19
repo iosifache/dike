@@ -8,11 +8,18 @@ app = Flask(__name__)
 
 # Default route
 @app.route("/")
-def default():
+def default() -> str:
+    """Default route of the API
+
+    Returns:
+        str: Welcome message
+    """
     return "This is the prediction server!\n"
 
 
 def main() -> None:
+    """Main function
+    """
     app.run(host="0.0.0.0", port=443)
 
 

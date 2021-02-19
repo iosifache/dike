@@ -1,6 +1,7 @@
-import vt
 import re
 import typing
+
+import vt
 from configuration.dike import DikeConfig
 
 
@@ -40,19 +41,19 @@ class VirusTotalScanner:
         self._api_client = vt.Client(api_key)
 
     def __del__(self):
-        """Destroys the VirusTotalScanner instance"""
+        """Destroys the VirusTotalScanner instance."""
         self._api_client.close()
 
-    def scan(self, hash: str) -> FileResults:
+    def scan(self, file_hash: str) -> FileResults:
         """Scans a file hash using Virus Total API.
 
         Args:
-            hash (str): Hash of the file
+            file_hash (str): Hash of the file
 
         Returns:
             FileResults: The results of scanning the hash
         """
-        file = self._api_client.get_object("/files/{}".format(hash))
+        file = self._api_client.get_object("/files/{}".format(file_hash))
 
         benign_votes = 0
         malware_votes = 0

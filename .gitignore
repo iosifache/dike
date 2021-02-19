@@ -1,15 +1,20 @@
-# Project-specific
-dike/subordinate/data/custom_datasets/*
-!dike/subordinate/data/custom_datasets/.gitkeep
-dike/subordinate/data/extracted_features/*
-!dike/subordinate/data/extracted_features/.gitkeep
-dike/subordinate/data/malware_datasets/*
-!dike/subordinate/data/malware_datasets/.gitkeep
+# Datasets
+dike/subordinate/data/datasets/custom/*
+!dike/subordinate/data/datasets/custom/.gitkeep
+dike/subordinate/data/datasets/full/*
+!dike/subordinate/data/datasets/full/benign/.gitkeep
+!dike/subordinate/data/datasets/full/malware/.gitkeep
+
+# Logs
 dike/subordinate/data/qiling/logs/*
 !dike/subordinate/data/qiling/logs/.gitkeep
 dike/subordinate/data/qiling/rootfs/*
 !dike/subordinate/data/qiling/rootfs/.gitkeep
+
+# Secrets
 dike/configuration/user/secrets.yaml
+
+# Notes
 NOTES.md
 
 # Visual Studio Code
@@ -122,6 +127,7 @@ celerybeat.pid
 .env
 .venv
 env/
+environment/
 venv/
 ENV/
 env.bak/

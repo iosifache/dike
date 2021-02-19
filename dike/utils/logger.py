@@ -1,5 +1,6 @@
-import emojis
 from enum import Enum
+
+import emojis
 
 
 class LoggedMessageType(Enum):
@@ -32,5 +33,5 @@ class Logger:
             end (str, optional): String appended at the end of the message.
                                  Defaults to "\n".
         """
-        message = emojis.encode(message)
-        print(message_type.value + " " + message, end=end)
+        message = emojis.encode(message_type.value + " " + message)
+        print(message, end=end)

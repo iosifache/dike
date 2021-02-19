@@ -1,9 +1,10 @@
-import yaml
 import os
-from pypattyrn.creational.singleton import Singleton
 import typing
 from enum import Enum
-from utils.logger import Logger, LoggedMessageType
+
+import yaml
+from pypattyrn.creational.singleton import Singleton
+from utils.logger import LoggedMessageType, Logger
 
 
 class ConfigurationSpace(Enum):
@@ -11,7 +12,9 @@ class ConfigurationSpace(Enum):
     MASTER_SERVER = "master_server"
     SUBORDINATE_SERVER = "subordintate_server"
     EXTRACTORS = "extractors"
+    PREPROCESSORS = "preprocessors"
     DATASET_BUILDER = "dataset_builder"
+    DIMENSIONALITY_REDUCTION = "dimensionality_reduction"
     DATABASE = "database"
     SECRETS = "secrets"
 
@@ -25,20 +28,26 @@ class ConfigurationWorker(object, metaclass=Singleton):
     class _Loader(yaml.SafeLoader):
         def __init__(self, stream):
             self._root = os.path.split(stream.name)[0]
+
+            # pylint: disable=protected-access
             super(ConfigurationWorker._Loader, self).__init__(stream)
 
         def include(self, node):
+            """Same as the corresponding method of the parent class"""
             filename = os.path.join(self._root, self.construct_scalar(node))
-            with open(filename, "r") as f:
-                return yaml.load(f, ConfigurationWorker._Loader)
+            with open(filename, "r") as file:
+                # pylint: disable=protected-access
+                return yaml.load(file, ConfigurationWorker._Loader)
 
     _config: typing.Any = None
 
-    def __init__(self, filename: str):
+    def __init__(self, filename: str = None):
         """Initializes the ConfigurationWorker instance.
 
         Args:
-            filename (str): Name of the configuration file
+            filename (str, optional): Name of the configuration file. Mentioned
+                                      ony on the singleton instanciation.
+                                      Defaults to None.
 
         Raises:
             FileNotFoundError: File does not exists

@@ -1,13 +1,12 @@
-import rpyc
 import ipaddress
 import threading
-import os
-import tqdm
 import time
 import typing
+
+import rpyc
+import tqdm
 from pypattyrn.creational.singleton import Singleton
-from utils.configuration import ConfigurationWorker, ConfigurationSpace
-from utils.logger import Logger, LoggerMessageType
+from utils.logger import LoggedMessageType, Logger
 
 
 class _Connection:
@@ -18,7 +17,7 @@ class _Connection:
     is_busy: bool = False
 
     def __init__(self, host: str, port: int, connection: rpyc.Connection):
-        """Initializes the _Connection instance
+        """Initializes the _Connection instance.
 
         Args:
             host (str): Hostname or IP address
@@ -65,6 +64,7 @@ class SubordinateLeader(object, metaclass=Singleton):
     def _check_answers(self, sleep_seconds: int):
         while (not self._stop_needed):
             for answer in self._answers:
+                # pylint: disable=pointless-statement
                 answer.ready
 
             time.sleep(sleep_seconds)
@@ -94,19 +94,19 @@ class SubordinateLeader(object, metaclass=Singleton):
             if (service_name and service_name.upper()
                     not in connection.root.get_service_aliases()):
                 return False
-            else:
-                self._connections.append(_Connection(host, port, connection))
-                if (are_info_logged):
-                    Logger.log(
-                        "Successfully connected to server {}:{}".format(
-                            host, port), LoggerMessageType.SUCCESS)
-                return True
+
+            self._connections.append(_Connection(host, port, connection))
+            if (are_info_logged):
+                Logger.log(
+                    "Successfully connected to server {}:{}".format(
+                        host, port), LoggedMessageType.SUCCESS)
+            return True
 
         except:
             if (are_info_logged):
                 Logger.log(
                     "Error on connection to server {}:{}".format(host, port),
-                    LoggerMessageType.FAIL)
+                    LoggedMessageType.FAIL)
             return False
 
     def connect_to_all_servers(self, network: str) -> None:
@@ -119,7 +119,7 @@ class SubordinateLeader(object, metaclass=Singleton):
             new_connections = 0
             addresses = ipaddress.IPv4Network(network)
             Logger.log("Starting to scan the given network",
-                       LoggerMessageType.WORK)
+                       LoggedMessageType.WORK)
             progress_bar = tqdm.tqdm(total=len(list(addresses)))
             for ip in addresses:
                 if (self.connect_to_server(str(ip), self._default_port_number,
@@ -130,18 +130,18 @@ class SubordinateLeader(object, metaclass=Singleton):
             if (new_connections > 0):
                 Logger.log(
                     "Successfully connected to {} servers".format(
-                        new_connections), LoggerMessageType.SUCCESS)
-            else:
-                Logger.log("No server to connect to", LoggerMessageType.FAIL)
+                        new_connections), LoggedMessageType.SUCCESS)
+
+            Logger.log("No server to connect to", LoggedMessageType.FAIL)
         except:
-            Logger.log("Invalid network", LoggerMessageType.FAIL)
+            Logger.log("Invalid network", LoggedMessageType.FAIL)
 
     def disconnect_from_server(self,
                                host: str,
                                port: int,
                                delete_host: bool = True,
                                are_info_logged: bool = True) -> bool:
-        """[summary]
+        """Disconnects from a subordinate server.
 
         Args:
             host (str): Hostname or IP of the subordinate server
@@ -170,11 +170,11 @@ class SubordinateLeader(object, metaclass=Singleton):
                 if (are_info_logged):
                     Logger.log(
                         "Successfully disconnection from server {}:{}".format(
-                            host, port), LoggerMessageType.SUCCESS)
+                            host, port), LoggedMessageType.SUCCESS)
                 return True
         if (are_info_logged):
             Logger.log("No connection with server {}:{}".format(host, port),
-                       LoggerMessageType.FAIL)
+                       LoggedMessageType.FAIL)
         return False
 
     def disconnect_from_all_servers(self):
@@ -190,9 +190,9 @@ class SubordinateLeader(object, metaclass=Singleton):
             self._connections.clear()
             Logger.log(
                 "Successfully disconnected from {} servers".format(
-                    disconnections), LoggerMessageType.SUCCESS)
-        else:
-            Logger.log("No server to disconnect from", LoggerMessageType.FAIL)
+                    disconnections), LoggedMessageType.SUCCESS)
+
+        Logger.log("No server to disconnect from", LoggedMessageType.FAIL)
 
     def _get_server_status(self, is_busy: bool):
         return "BUSY" if is_busy else "AVAILABLE"
@@ -202,13 +202,13 @@ class SubordinateLeader(object, metaclass=Singleton):
         """
         if (len(self._connections) > 0):
             Logger.log("Active connections are:",
-                       LoggerMessageType.CONNECTIONS)
+                       LoggedMessageType.CONNECTIONS)
             for connection in self._connections:
                 Logger.log("\t- {}:{} with status {}".format(
                     connection.host, connection.port,
                     self._get_server_status(connection.is_busy)))
-        else:
-            Logger.log("No connection at the moment", LoggerMessageType.FAIL)
+
+        Logger.log("No connection at the moment", LoggedMessageType.FAIL)
 
     def _get_first_free_server(self) -> _Connection:
         for connection in self._connections:
@@ -229,23 +229,24 @@ class SubordinateLeader(object, metaclass=Singleton):
     def train_model_by_skeleton(self):
         """Mimics the training of a machine learning model.
 
-        This method will be removed soon. 
+        This method will be removed soon.
         """
         connection = self._get_first_free_server()
         if (connection):
             Logger.log(
                 "Successfully found free server {}:{}".format(
                     connection.host, connection.port),
-                LoggerMessageType.NEW_MESSAGE)
+                LoggedMessageType.NEW_MESSAGE)
             self._delegate_task_to_server(connection, "train_new_model",
                                           SubordinateLeader._consume_new_model)
-        else:
-            Logger.log("No free server can execute the task",
-                       LoggerMessageType.FAIL)
+
+        Logger.log("No free server can execute the task",
+                   LoggedMessageType.FAIL)
 
     def _consume_new_model_from_instance(
             self, async_result: rpyc.AsyncResult) -> None:
         for connection in self._connections:
+            # pylint: disable=protected-access
             if (connection.effective_connection == async_result._conn):
                 # The availability results from previous delegated tasks and
                 # received response. For example, if a task was delegated to a
@@ -257,5 +258,7 @@ class SubordinateLeader(object, metaclass=Singleton):
 
     @staticmethod
     def _consume_new_model(async_result: rpyc.AsyncResult) -> None:
+        # Get the singleton instance
         global_instance = SubordinateLeader(0, "", 0)
+        # pylint: disable=protected-access
         global_instance._consume_new_model_from_instance(async_result)

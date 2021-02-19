@@ -1,11 +1,12 @@
+import typing
+
+import capstone
 import pefile
 import qiling
 import qiling.const
-import capstone
-import typing
 
 
-class _SectionCharacteristics(dict):
+class SectionCharacteristics(dict):
     """Class encapsulating details about a section
 
     Attributes:
@@ -21,7 +22,8 @@ class _SectionCharacteristics(dict):
 
     def __init__(self, name: str, entropy: float, raw_size: int,
                  virtual_size: int):
-        """Initializes the _SectionCharacteristics instance"""
+        """Initializes the SectionCharacteristics instance.
+        """
         dict.__init__(self,
                       name=name,
                       entropy=entropy,
@@ -29,7 +31,7 @@ class _SectionCharacteristics(dict):
                       virtual_size=virtual_size)
 
 
-class _StaticBucket:
+class StaticBucket:
     """Class encapsulating details about an executable, extracted via static
     analysis
 
@@ -42,8 +44,8 @@ class _StaticBucket:
                                     extractors
         strings (typing.List[str]): List of printable character sequences from
                                     the executable
-        sections (typing.List[_SectionCharacteristics]): List of
-                                                        _SectionCharacteristics,
+        sections (typing.List[SectionCharacteristics]): List of
+                                                        SectionCharacteristics,
                                                         representing the
                                                         sections of the
                                                         executable
@@ -60,13 +62,13 @@ class _StaticBucket:
     content: bytes = None
     disassembler: capstone.Cs = None
     strings: typing.List[str] = []
-    sections: typing.List[_SectionCharacteristics] = []
+    sections: typing.List[SectionCharacteristics] = []
     imported_libraries: typing.List[str] = []
     imported_functions: typing.List[str] = []
     exported_functions: typing.List[str] = []
 
 
-class _DynamicBucket:
+class DynamicBucket:
     """Class encapsulating details about an executable, extracted via dynamic
     analysis
 
