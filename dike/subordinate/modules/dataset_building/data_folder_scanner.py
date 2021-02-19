@@ -50,7 +50,8 @@ class DataFolderScanner:
         self._malware_families = malware_families
         self._malware_benign_vote_ratio = malware_benign_vote_ratio
 
-    def _process_new_samples(self, malware_folder: bool) -> None:
+    def _process_new_samples(self, malware_folder: bool,
+                             min_ignored_percent: float) -> None:
         Logger.log("Start processing files from the given folder\n",
                    LoggedMessageType.BEGINNING)
 
@@ -109,7 +110,8 @@ class DataFolderScanner:
         # Check if the malware labels must be updated
         if (new_malware != 0):
             self.update_malware_labels(self._malware_families,
-                                       self._malware_benign_vote_ratio)
+                                       self._malware_benign_vote_ratio,
+                                       min_ignored_percent)
 
         progress_bar.close()
         next_step_write.close()
@@ -147,7 +149,6 @@ class DataFolderScanner:
 
             # Dump the result into the CSV file
             already_exists = os.path.isfile(DikeConfig.VT_DATA_FILE)
-            print(already_exists)
             output_file = open(DikeConfig.VT_DATA_FILE, "a")
             if not already_exists:
                 output_file.write(
@@ -175,7 +176,8 @@ class DataFolderScanner:
 
     @staticmethod
     def update_malware_labels(malware_families: dict,
-                              malware_benign_vote_ratio: int) -> None:
+                              malware_benign_vote_ratio: int,
+                              min_ignored_percent: float) -> None:
         """Updates the labels of the malware.
 
         This can be used in order to forcefully process Virus Total new tags,
@@ -187,7 +189,12 @@ class DataFolderScanner:
                                      patterns for antivirus engine detections
             malware_benign_vote_ratio (int): The weight of a malware antivirus
                                              engine vote
+            min_ignored_percent (float): Percentage of occurances above which a
+                                         skipped entry is considered outlier
         """
+        Logger.log("Start processing new malware labels\n",
+                   LoggedMessageType.BEGINNING)
+
         # Read raw tags from file
         vt_data_df = pandas.read_csv(DikeConfig.VT_DATA_FILE)
         raw_tags = vt_data_df["raw_tags"]
@@ -208,6 +215,7 @@ class DataFolderScanner:
         # Populate the created data frame
         all_families = []
         extractor = GroupCounter(malware_families, True)
+        progress_bar = tqdm.tqdm(total=len(vt_data_df))
         for _, entry in vt_data_df.iterrows():
             all_families.extend(entry["raw_tags"].split(" "))
 
@@ -224,23 +232,31 @@ class DataFolderScanner:
                 [pandas.Series(new_entry, index=labels_df.columns)],
                 ignore_index=True)
 
+            progress_bar.update()
+
+        progress_bar.close()
+        Logger.log("")
+
         # Print all outliers that were not considered into malware families
         # groups
-        extractor = GroupCounter(malware_families, True, True, 0.05)
+        extractor = GroupCounter(malware_families, True, True,
+                                 min_ignored_percent)
         extractor.fit_transform(all_families)
 
         # Dump data frame to CSV file
         labels_df.to_csv(DikeConfig.MALWARE_LABELS, index=False)
+
         Logger.log("Successfully dumped labels to file",
                    LoggedMessageType.SUCCESS)
 
     def _continuous_folder_watch(self, malware_folder: bool,
-                                 sleep_in_seconds: int) -> None:
+                                 sleep_in_seconds: int,
+                                 min_ignored_percent: float) -> None:
         # While the stop function is not called, scan and sleep
         while (not self._stop_scan_threads):
 
             self._mutex.acquire()
-            self._process_new_samples(malware_folder)
+            self._process_new_samples(malware_folder, min_ignored_percent)
             self._mutex.release()
 
             time.sleep(sleep_in_seconds)
@@ -248,7 +264,6 @@ class DataFolderScanner:
     def _continuous_vt_scan(self, sleep_in_seconds: int) -> None:
         # While the stop function is not called, scan and sleep
         while (not self._stop_scan_threads):
-
             self._mutex.acquire()
             self._scan_file_hash()
             self._mutex.release()
@@ -258,10 +273,11 @@ class DataFolderScanner:
     def start_scanning(self,
                        malware_folder: bool,
                        folder_watch_interval: int,
+                       min_ignored_percent: float,
                        vt_scan_interval: int = 0) -> None:
         """Starts the continuous scanning of a given folder, containing benign
         programs or malware.
-W
+
         The hashes of the new files from the malware folder are scanned
         periodically with VirusTotal. This step is skipped for the benign ones,
         which are assumed completely clear.
@@ -281,6 +297,9 @@ W
             folder_watch_interval (int): Number of seconds between two
                                          consecutive scans of the given
                                          folder
+            min_ignored_percent (float): Percentage of occurances of malware
+                                         labels above which a skipped entry is
+                                         considered an outlier
             vt_scan_interval (int, optional): Number of seconds between two
                                               consecutive scans of a malware
                                               hash with VirusTotal. Only for
@@ -290,7 +309,7 @@ W
         """
         self._folder_watch_thread = Thread(
             target=self._continuous_folder_watch,
-            args=(malware_folder, folder_watch_interval))
+            args=(malware_folder, folder_watch_interval, min_ignored_percent))
         self._folder_watch_thread.start()
 
         if (malware_folder):

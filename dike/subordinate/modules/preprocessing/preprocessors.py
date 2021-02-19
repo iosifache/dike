@@ -223,7 +223,7 @@ class GroupCounter(Preprocessor):
             verbose (bool): Boolean indicating if the outliers entries are
                             logged
             min_ignored_percent (float): Percentage of occurances above which a
-                                skipped entry is considered outlier
+                                         skipped entry is considered outlier
         """
         self.categories = categories
         self.verbose = verbose
@@ -266,7 +266,6 @@ class GroupCounter(Preprocessor):
         for category in self.categories:
             group_count = 0
             for label in self.categories[category]:
-                will_delete = False
 
                 if "*" in label:
                     # If the label has wild chars, then search all elements that
@@ -278,21 +277,14 @@ class GroupCounter(Preprocessor):
                     for matched_element in matched_elements:
                         group_count += counter[matched_element]
                         valid_elements += 1
-                        will_delete = True
-                        if (not self.allow_multiple_categories):
-                            del counter[matched_element]
+                        del counter[matched_element]
                 else:
                     try:
                         group_count += counter[label]
                         valid_elements += 1
-                        will_delete = True
-                        if (not self.allow_multiple_categories):
-                            del counter[label]
+                        del counter[label]
                     except:
                         pass
-
-                if (self.allow_multiple_categories and will_delete):
-                    del counter[label]
 
             frequency_dict[category] = group_count
 
