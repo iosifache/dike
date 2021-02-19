@@ -8,7 +8,7 @@ The script is platform-independent (the required classes are already included)
 and runs without other files from dike.
 
 Environment variables that must be set are:
-- BUCKET_NAME, for the name of the bucket from Google Cloud Storage; 
+- BUCKET_NAME, for the name of the bucket from Google Cloud Storage;
 - HASHES_FILENAME, for the name of the file containing hashes;
 - CSV_FILENAME, for the name of the CSV file where results are dumped; and
 - VT_API_KEY, for Virus Total API key.
@@ -18,11 +18,12 @@ Required modules, to be noted in requirements.txt in the Cloud Function are:
 - google-cloud-storage (used version at the time was 1.35.0).
 """
 
-from google.cloud import storage
-import vt
-import re
 import os
+import re
 import typing
+
+import vt
+from google.cloud import functions, storage
 
 # Contants
 ANTIVIRUSES_MALWARE_CATEGORIES = ["malicious", "suspicious"]
@@ -39,6 +40,9 @@ TEMP_CSV_FILENAME = os.path.join("/tmp", CSV_FILENAME)
 
 
 class FileResults(dict):
+    """Class description found in
+    subordinate/modules/dataset_building/vt_scanner.py
+    """
     benign_votes: int = 0
     malware_votes: int = 0
     raw_tags: typing.List[str] = []
@@ -52,6 +56,9 @@ class FileResults(dict):
 
 
 class VirusTotalScanner:
+    """Class description can be found in
+    subordinate/modules/dataset_building/vt_scanner.py
+    """
     _api_client: vt.Client = None
 
     def __init__(self, api_key: str):
@@ -60,8 +67,11 @@ class VirusTotalScanner:
     def __del__(self):
         self._api_client.close()
 
-    def scan(self, hash: str):
-        file = self._api_client.get_object("/files/{}".format(hash))
+    def scan(self, file_hash: str):
+        """Function description can be found in
+        subordinate/modules/dataset_building/vt_scanner.py
+        """
+        file = self._api_client.get_object("/files/{}".format(file_hash))
 
         benign_votes = 0
         malware_votes = 0
@@ -84,7 +94,14 @@ class VirusTotalScanner:
         return FileResults(benign_votes, malware_votes, raw_tags)
 
 
-def scan_hashes_automatically(event, context):
+# pylint: disable=unused-argument
+def scan_hashes_automatically(event: dict, context: functions.Context):
+    """Cloud function triggered by a Pub/Sub event
+
+    Args:
+        event (dict): Dictionary with data specific to this type of event
+        context (functions.Context): Cloud Functions event metadata
+    """
     # Read all hashes from the file
     client = storage.Client()
     bucket = client.get_bucket(BUCKET_NAME)
@@ -105,17 +122,17 @@ def scan_hashes_automatically(event, context):
     os.remove(TEMP_HASHES_FILENAME)
 
     # Get first hash
-    hash = content[0].rstrip()
+    file_hash = content[0].rstrip()
 
     # Scan the given hash with VirusTotal
     client = VirusTotalScanner(VT_API_KEY)
-    result = client.scan(hash)
+    result = client.scan(file_hash)
 
     # Dump the result into the CSV file
     csv_file_read = bucket.get_blob(CSV_FILENAME)
     content = csv_file_read.download_as_string()
     content = content.decode("utf-8").splitlines(True)
-    csv_row = hash + "," + str(result["benign_votes"]) + "," + str(
+    csv_row = file_hash + "," + str(result["benign_votes"]) + "," + str(
         result["malware_votes"]) + "," + " ".join(result["raw_tags"]) + "\n"
     content.append(csv_row)
 

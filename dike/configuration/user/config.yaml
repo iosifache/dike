@@ -22,9 +22,13 @@ extractors:
         minimum_occurances: 1
     opcodes:
         categories: !include opcodes_categories.yaml
+        allow_multiple_categories: 1
+        verbose: True
         min_ignored_percent: 0.05
     apis:
         categories: !include api_categories.yaml
+        allow_multiple_categories: 1
+        verbose: True
         min_ignored_percent: 0.05
         ignored_prefixes:
             - Rtl
@@ -38,8 +42,15 @@ extractors:
             - A
             - W
 
+preprocessors:
+    ngrams:
+        n: 2
+        to_lowercase: True
+        valid_charset: LOWERCASE
+
 dataset_builder:
-    malware_categories: !include malware_categories.yaml
+    malware_families: !include malware_families.yaml
+    malware_benign_vote_ratio: 2
 
 database:
     hostname: localhost

@@ -1,30 +1,22 @@
 from __future__ import annotations
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.preprocessing import Binarizer, KBinsDiscretizer
-from sklearn.feature_extraction.text import CountVectorizer
-import numpy as np
-import itertools
-import string
-import collections
-from enum import Enum
+
 import abc
-import typing
+import collections
+import itertools
 import re
+import string
+import typing
 from enum import Enum
-from utils.logger import Logger, LoggerMessageType
+
+import numpy as np
+import pandas
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.feature_extraction.text import \
+    CountVectorizer as StandardCountVectorizer
+from utils.logger import LoggedMessageType, Logger
 
 
-class PreprocessorsTypes(Enum):
-    IDENTITY = "Identity"
-    BINARIZER = "Binarizer"
-    K_BINS_DISCRETIZER = "KBinsDiscretizer"
-    COUNTER = "Counter"
-    COUNT_VECTORIZER = "CountVectorizer"
-    N_GRAMS = "NGrams"
-    GROUP_COUNTER = "GroupCounter"
-
-
-class _Preprocesor(BaseEstimator, TransformerMixin, abc.ABC):
+class Preprocessor(BaseEstimator, TransformerMixin, abc.ABC):
     """Class modeling a preprocessor of extracted features"""
     @abc.abstractmethod
     def fit(self, X: np.array, y: np.array = None) -> typing.Any:
@@ -37,10 +29,11 @@ class _Preprocesor(BaseEstimator, TransformerMixin, abc.ABC):
         Returns:
             typing.Any: Instance being fit
         """
-        pass
+        return
 
+    @abc.abstractmethod
     def transform(self, X: np.array, y: np.array = None) -> typing.Any:
-        """Transforms the given data, based on the already fit model
+        """Transforms the given data, based on the already fit model.
 
         Args:
             X (np.array): Data to be transformed
@@ -49,10 +42,10 @@ class _Preprocesor(BaseEstimator, TransformerMixin, abc.ABC):
         Returns:
             typing.Any: Transformed data
         """
-        pass
+        return
 
 
-class Identity(_Preprocesor):
+class Identity(Preprocessor):
     """Class representing a preprocessor that only passes the input data to
     output"""
     def fit(self, X: np.array, y: np.array = None) -> Identity:
@@ -68,23 +61,64 @@ class Identity(_Preprocesor):
         return X
 
 
-class Counter(_Preprocesor):
+class Counter(Preprocessor):
     """Class representing a preprocessor for counting the elements from the
     sample"""
     def fit(self, X: np.array, y: np.array = None) -> Counter:
         """Same as the corresponding method of the parent class"""
         return self
 
-    def transform(self, X: np.array, y: np.array = None) -> int:
+    # pylint: disable=unused-argument
+    def _transform_each(self, X: np.array, y: np.array = None) -> int:
+        return len(X)
+
+    def transform(self,
+                  X: np.array,
+                  y: np.array = None) -> typing.List[typing.List[int]]:
         """Same as the corresponding method of the parent class
-        
+
         Returns:
             int: Count of the vector elements
         """
-        return len(X)
+        return [self._transform_each(x, y) for x in X]
 
 
-class NGrams(_Preprocesor):
+class CountVectorizer(Preprocessor):
+    """Class representing a preprocessor for counting the words into a list"""
+    _inner_model: StandardCountVectorizer = None
+
+    def __init__(self):
+        self._inner_model = StandardCountVectorizer()
+
+    def fit(self, X: np.array, y: np.array = None) -> Counter:
+        """Same as the corresponding method of the parent class"""
+        # Transform list to phrase
+        transformed_X = []
+        for i, _ in enumerate(X):
+            transformed_X.append(" ".join(X[i]))
+
+        # Fit the standard sklearn model
+        self._inner_model.fit(transformed_X, y)
+
+        return self
+
+    def transform(self,
+                  X: np.array,
+                  y: np.array = None) -> typing.List[typing.List[int]]:
+        """Same as the corresponding method of the parent class
+
+        Returns:
+            typing.List[typing.List[int]]: List of occurances
+        """
+        # Transform list to phrase
+        transformed_X = []
+        for i, _ in enumerate(X):
+            transformed_X.append(" ".join(X[i]))
+
+        return self._inner_model.transform(transformed_X)
+
+
+class NGrams(Preprocessor):
     """Class representing a preprocessor for generating the N-grams for a given
     piece of text
 
@@ -98,11 +132,12 @@ class NGrams(_Preprocesor):
         LOWERCASE = string.ascii_lowercase
         UPPERLOWERCASE = string.ascii_letters
         UPPERLOWERCASE_DIGITS = UPPERLOWERCASE + string.digits
-        UPPERLOWERCASE_DIGITS_SPECIALS = UPPERLOWERCASE_DIGITS + string.punctuation
+        UPPERLOWERCASE_DIGITS_SPECIALS = UPPERLOWERCASE_DIGITS + \
+            string.punctuation
 
-    _n: int = None
-    _to_lowercase: bool = 0
-    _valid_charset: Charset = None
+    n: int = None
+    to_lowercase: bool = False
+    valid_charset: Charset = None
 
     def __init__(self, n: int, to_lowercase: bool, valid_charset: Charset):
         """Initializes the NGrams instance.
@@ -114,24 +149,22 @@ class NGrams(_Preprocesor):
             valid_charset (Charset): Charset instace, indicating the charset to
                                      be used
         """
-        self._n = n
-        self._to_lowercase = to_lowercase
-        self._valid_charset = valid_charset
+        self.n = n
+        self.to_lowercase = to_lowercase
+        self.valid_charset = valid_charset
 
     def fit(self, X: np.array, y: np.array = None) -> NGrams:
         """Same as the corresponding method of the parent class"""
         return self
 
-    def transform(self, X: np.array, y: np.array = None) -> typing.List[int]:
-        """Same as the corresponding method of the parent class
-        
-        Returns:
-            typing.List[int]: List of occurances for each generated N gram
-        """
+    # pylint: disable=unused-argument
+    def _transform_each(self,
+                        X: np.array,
+                        y: np.array = None) -> typing.List[int]:
         clean_list = []
-        valid_charset_str = "".join(self._valid_charset.value)
+        valid_charset_str = "".join(self.valid_charset.value)
         for element in X:
-            if self._to_lowercase:
+            if self.to_lowercase:
                 element = element.lower()
             new_element = ""
             for char in element:
@@ -140,8 +173,8 @@ class NGrams(_Preprocesor):
             clean_list.append(new_element)
 
         # Create dictionary
-        combinations = itertools.product(self._valid_charset.value,
-                                         repeat=self._n)
+        combinations = itertools.product(self.valid_charset.value,
+                                         repeat=self.n)
         ngrams = {}
         for combination in combinations:
             combination_key = "".join(combination)
@@ -149,54 +182,68 @@ class NGrams(_Preprocesor):
 
         # Populate the dictionary
         for element in clean_list:
-            for i in range(len(element) - self._n + 1):
-                ngrams[element[i:i + self._n]] += 1
+            for i in range(len(element) - self.n + 1):
+                ngrams[element[i:i + self.n]] += 1
 
-        return [ngrams[key] for key in ngrams.keys()]
+        return list(ngrams.values())
+
+    def transform(self,
+                  X: np.array,
+                  y: np.array = None) -> typing.List[typing.List[int]]:
+        """Same as the corresponding method of the parent class
+
+        Returns:
+            typing.List[int]: List of occurances for each generated N gram
+        """
+        return [self._transform_each(x, y) for x in X]
 
 
-class GroupCounter(_Preprocesor):
+class GroupCounter(Preprocessor):
     """Class representing a preprocessor for categories-based frequency
     extraction"""
-    _categories: dict = None
-    _verbose: bool = True
-    _min_ignored_percent: float = 0
-    _allow_multiple_categories: bool = False
+    categories: dict = None
+    verbose: bool = True
+    min_ignored_percent: float = 0
+    allow_multiple_categories: bool = False
 
-    def __init__(self, categories: dict, verbose: bool,
-                 min_ignored_percent: float,
-                 allow_multiple_categories: bool) -> None:
+    def __init__(
+        self,
+        categories: dict,
+        allow_multiple_categories: bool,
+        verbose: bool = False,
+        min_ignored_percent: float = 0,
+    ) -> None:
         """Initializes the GroupCounter instance.
 
         Args:
             categories (dict): Categories in which the data is grouped
+            allow_multiple_categories (bool): Boolean indicating if an entry can
+                                              can be grouped under multiple
+                                              categories
             verbose (bool): Boolean indicating if the outliers entries are
                             logged
             min_ignored_percent (float): Percentage of occurances above which a
                                 skipped entry is considered outlier
-            allow_multiple_categories (bool): Boolean indicating if an entry can
-                                              can be grouped under multiple
-                                              categories
         """
-        self._categories = categories
-        self._verbose = verbose
-        self._min_ignored_percent = min_ignored_percent
-        self._allow_multiple_categories = allow_multiple_categories
+        self.categories = categories
+        self.verbose = verbose
+        self.min_ignored_percent = min_ignored_percent
+        self.allow_multiple_categories = allow_multiple_categories
 
     @staticmethod
-    def _check_wildcards_match(pattern: str, string: str) -> bool:
+    def _check_wildcards_match(pattern: str, raw_string: str) -> bool:
         pattern = pattern.replace("*", r"(\w)*")
-        return (re.match(pattern, string) is not None)
+        return (re.match(pattern, raw_string) is not None)
 
     def _print_list_of_outliers(self, elements: typing.List[str],
                                 counter: collections.Counter):
         printed_caption = False
         for key in counter.keys():
             percent = counter[key] / len(elements)
-            if (percent > self._min_ignored_percent):
+            if (percent > self.min_ignored_percent):
                 if not printed_caption:
                     Logger.log("Outliers (that are not in any category) are:",
-                               LoggerMessageType.NEW)
+                               LoggedMessageType.NEW)
                     printed_caption = True
                 Logger.log(
                     "\t- {} with {} occurances ({:.3f}% from total)".format(
@@ -208,7 +255,7 @@ class GroupCounter(_Preprocesor):
 
     def transform(self, X: np.array, y: np.array = None) -> typing.List[int]:
         """Same as the corresponding method of the parent class
-        
+
         Returns:
             typing.List[int]: List of occurances for each category
         """
@@ -216,9 +263,11 @@ class GroupCounter(_Preprocesor):
         counter = collections.Counter(X)
         frequency_dict = {}
         valid_elements = 0
-        for category in self._categories:
+        for category in self.categories:
             group_count = 0
-            for label in self._categories[category]:
+            for label in self.categories[category]:
+                will_delete = False
+
                 if "*" in label:
                     # If the label has wild chars, then search all elements that
                     # matches the given pattern and add their occurrences
@@ -229,53 +278,52 @@ class GroupCounter(_Preprocesor):
                     for matched_element in matched_elements:
                         group_count += counter[matched_element]
                         valid_elements += 1
-                        if (not self._allow_multiple_categories):
+                        will_delete = True
+                        if (not self.allow_multiple_categories):
                             del counter[matched_element]
                 else:
                     try:
                         group_count += counter[label]
                         valid_elements += 1
-                        if (not self._allow_multiple_categories):
+                        will_delete = True
+                        if (not self.allow_multiple_categories):
                             del counter[label]
                     except:
                         pass
 
-                if (self._allow_multiple_categories):
+                if (self.allow_multiple_categories and will_delete):
                     del counter[label]
 
             frequency_dict[category] = group_count
 
-        if self._verbose:
+        if self.verbose:
             self._print_list_of_outliers(X, counter)
 
-        return [frequency_dict[key] for key in frequency_dict.keys()]
+        return list(frequency_dict.values())
 
 
-class PreprocessorsFactory:
-    """Class for creating preprocessors instances"""
-    @staticmethod
-    def create_preprocessor_from_type(type: PreprocessorsTypes,
-                                      arguments: dict) -> _Preprocesor:
-        """Creates a preprocessor instances.
+class SameLengthImputer(Preprocessor):
+    """Class representing a preprocessor that imputes the lines of a matrix to
+    have the same length"""
+    def fit(self, X: np.array, y: np.array = None) -> Identity:
+        """Same as the corresponding method of the parent class"""
+        return self
 
-        Args:
-            type (PreprocessorsTypes): Type of the preprocessor
-            arguments (dict): Arguments being passed to preprocessor contructor
+    def transform(self, X: np.array, y: np.array = None) -> typing.Any:
+        """Same as the corresponding method of the parent class
 
         Returns:
-            _Preprocesor: Preprocessor instance
+            typing.Any: Input data
         """
-        if (type == PreprocessorsTypes.IDENTITY):
-            return Identity()
-        elif (type == PreprocessorsTypes.BINARIZER):
-            return Binarizer()
-        elif (type == PreprocessorsTypes.K_BINS_DISCRETIZER):
-            return KBinsDiscretizer()
-        elif (type == PreprocessorsTypes.COUNTER):
-            return Counter()
-        elif (type == PreprocessorsTypes.COUNT_VECTORIZER):
-            return CountVectorizer()
-        elif (type == PreprocessorsTypes.N_GRAMS):
-            return NGrams(**arguments)
-        elif (type == PreprocessorsTypes.GROUP_COUNTER):
-            return GroupCounter(**arguments)
+        first_element = X[0][0]
+        if (isinstance(first_element, int)
+                or isinstance(first_element, float)):
+            value = 0
+        elif isinstance(first_element, str):
+            value = ""
+
+        max_length = max([len(line) for line in X])
+        for line in X:
+            to_add = max_length - len(line)
+            line.extend(to_add * [value])
+        return pandas.DataFrame(X)

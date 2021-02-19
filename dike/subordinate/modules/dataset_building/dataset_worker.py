@@ -1,8 +1,9 @@
-import pandas
 import os
 import typing
+
+import pandas
 from configuration.dike import DikeConfig
-from utils.logger import Logger, LoggerMessageType
+from utils.logger import LoggedMessageType, Logger
 
 
 class DatasetWorker:
@@ -22,7 +23,7 @@ class DatasetWorker:
                                                   pointed family (via index) is
                                                   included into the dataset
             enties_count (int): Mandatory number of entries in the dataset
-            benign_ratio (float): Ratio between the size of benign samples and 
+            benign_ratio (float): Ratio between the size of benign samples and
                                   of the whole dataset
             output_filename (str): The basename of the output file
         """
@@ -41,14 +42,14 @@ class DatasetWorker:
         if (len(malware_labels_df) < malware_count
                 or len(benign_labels_df) < benign_count):
             Logger.log("Insufficient entries to build a dataset",
-                       LoggerMessageType.FAIL)
+                       LoggedMessageType.FAIL)
 
         # Select entries with maximum membership to the given categories
         desired_families_int = [1 if elem else 0 for elem in desired_families]
         malware_labels_df["membership"] = malware_labels_df.iloc[:, 2:].dot(
             desired_families_int)
         malware_labels_df.sort_values("membership")
-        malware_labels_df.drop("membership", axis=1)
+        del malware_labels_df["membership"]
         malware_labels_df = malware_labels_df.head(malware_count)
 
         # Select random benign entries

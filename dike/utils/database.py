@@ -64,7 +64,8 @@ class DatabaseWorker:
         """Query all collections from current collection.
 
         Returns:
-            pymongo.cursor.Cursor: Cursor to the iterate through Mongo query results
+            pymongo.cursor.Cursor: Cursor to the iterate through Mongo query
+                                   results
         """
         return self._collection.find({})
 

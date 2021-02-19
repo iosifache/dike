@@ -9,12 +9,13 @@ API categories and the mapping are defines on the open-source repository
 report-parser.
 """
 
-import yaml
 import os
 import sys
+
 import subordinate.modules.features_extraction.extractors as extractors
-from utils.configuration import ConfigurationWorker, ConfigurationSpace
-from utils.logger import Logger, LoggerMessageType
+import yaml
+from utils.configuration import ConfigurationSpace, ConfigurationWorker
+from utils.logger import LoggedMessageType, Logger
 
 # Constants
 OUTPUT_FILE = "../configuration/api_categories_normalized.yaml"
@@ -274,16 +275,21 @@ functions = {
 
 
 class CustomDumper(yaml.Dumper):
+    """Class implemeting a custom YAML dumper
+    """
     def increase_indent(self, flow=False, indentless=False):
         return super(CustomDumper, self).increase_indent(flow, False)
 
 
 def main():
+    """Main function
+    """
+    # pylint: disable=global-statement
     global CATEGORIES, functions
 
     # Check arguments
     if not (len(sys.argv) == 2 and os.path.isfile(sys.argv[1])):
-        Logger.log("Invalid (number of) arguments", LoggerMessageType.FAIL)
+        Logger.log("Invalid (number of) arguments", LoggedMessageType.FAIL)
         exit(1)
 
     # Get parameter
@@ -295,7 +301,7 @@ def main():
 
     # Create an extractor for API calls to be able to use the normalization
     # method
-    api_extractor = extractors.APIsExtractor()
+    api_extractor = extractors.DynamicAPIs()
     api_extractor.set_configuration(config["apis"]["ignored_prefixes"],
                                     config["apis"]["ignored_suffixes"])
 

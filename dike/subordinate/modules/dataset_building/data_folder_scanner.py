@@ -1,14 +1,15 @@
-from sklearn import preprocessing
-import pandas
-from threading import Thread, Lock
-from Crypto.Hash import SHA256
-import tqdm
 import os
 import time
-from subordinate.modules.dataset_building.vt_scanner import VirusTotalScanner
-from subordinate.modules.preprocessors import GroupCounter
+from threading import Lock, Thread
+
+import pandas
+import tqdm
 from configuration.dike import DikeConfig
-from utils.logger import Logger, LoggedMessageType
+from Crypto.Hash import SHA256
+from sklearn import preprocessing
+from subordinate.modules.dataset_building.vt_scanner import VirusTotalScanner
+from subordinate.modules.preprocessing.preprocessors import GroupCounter
+from utils.logger import LoggedMessageType, Logger
 
 
 class DataFolderScanner:
@@ -30,15 +31,15 @@ class DataFolderScanner:
 
         Args:
             vt_api_key (str, optional): The API key from Virus Total, used to
-                                            scan malware hashed. Defaults to 
+                                            scan malware hashed. Defaults to
                                             None, because of the possibility to
                                             scan the benign folder too.
             malware_families (dict, optional): Dictionary with malware families
-                                               and patterns for antivirus 
+                                               and patterns for antivirus
                                                engine detections. Defaults to
                                                None, because of the possibility
                                                to scan the benign folder too.
-            malware_benign_vote_ratio (int, optional): The weight of a malware 
+            malware_benign_vote_ratio (int, optional): The weight of a malware
                                                        antivirus engine vote.
                                                        Defaults to None, because
                                                        of the possibility to
@@ -107,8 +108,8 @@ class DataFolderScanner:
 
         # Check if the malware labels must be updated
         if (new_malware != 0):
-            self._update_malware_labels(self._malware_families,
-                                        self._malware_benign_vote_ratio)
+            self.update_malware_labels(self._malware_families,
+                                       self._malware_benign_vote_ratio)
 
         progress_bar.close()
         next_step_write.close()
@@ -134,25 +135,27 @@ class DataFolderScanner:
         hash_file.close()
 
         # Process first hash
-        hash = content[0].rstrip()
-        Logger.log("Hash to be scanned is {}".format(hash),
+        hash_file = content[0].rstrip()
+        Logger.log("Hash to be scanned is {}".format(hash_file),
                    LoggedMessageType.WORK)
 
         try:
 
             # Scan the given hash with VirusTotal
             client = VirusTotalScanner(self._vt_api_key)
-            result = client.scan(hash)
+            result = client.scan(hash_file)
 
             # Dump the result into the CSV file
             already_exists = os.path.isfile(DikeConfig.VT_DATA_FILE)
             print(already_exists)
             output_file = open(DikeConfig.VT_DATA_FILE, "a")
             if not already_exists:
-                output_file.write("hash,benign_votes,malware_votes,raw_tags\n")
-            csv_row = hash + "," + str(result["benign_votes"]) + "," + str(
-                result["malware_votes"]) + "," + " ".join(
-                    result["raw_tags"]) + "\n"
+                output_file.write(
+                    "hash,harmless_votes,malicious_votes,raw_tags\n")
+            csv_row = hash_file + "," + str(
+                result["harmless_votes"]) + "," + str(
+                    result["malicious_votes"]) + "," + " ".join(
+                        result["raw_tags"]) + "\n"
             output_file.write(csv_row)
             output_file.close()
 
@@ -165,14 +168,26 @@ class DataFolderScanner:
 
     @staticmethod
     def _get_malice_score(malware_benign_vote_ratio: int, malice_votes: int,
-                          benign_votes: int) -> int:
+                          harmless_votes: int) -> int:
         # Compute the weighted average from the antivirus engines votes
         return (malware_benign_vote_ratio * malice_votes) / (
-            malware_benign_vote_ratio * malice_votes + benign_votes)
+            malware_benign_vote_ratio * malice_votes + harmless_votes)
 
     @staticmethod
-    def _update_malware_labels(malware_families: dict,
-                               malware_benign_vote_ratio: int) -> None:
+    def update_malware_labels(malware_families: dict,
+                              malware_benign_vote_ratio: int) -> None:
+        """Updates the labels of the malware.
+
+        This can be used in order to forcefully process Virus Total new tags,
+        manually placed into the specific file (for example, after running in
+        the Google Cloud Platform the extraction script).
+
+        Args:
+            malware_families (dict): Dictionary with malware families and
+                                     patterns for antivirus engine detections
+            malware_benign_vote_ratio (int): The weight of a malware antivirus
+                                             engine vote
+        """
         # Read raw tags from file
         vt_data_df = pandas.read_csv(DikeConfig.VT_DATA_FILE)
         raw_tags = vt_data_df["raw_tags"]
@@ -183,28 +198,36 @@ class DataFolderScanner:
             raw_tags.extend(elem.lower().split(" "))
 
         # Create a new data frame
-        malware_families = [
+        malware_families_names = [
             family.lower() for family in list(malware_families.keys())
         ]
         columns = ["hash", "malice"]
-        columns.extend(malware_families)
+        columns.extend(malware_families_names)
         labels_df = pandas.DataFrame(columns=columns)
 
         # Populate the created data frame
-        extractor = GroupCounter(malware_families, True, 1, True)
+        all_families = []
+        extractor = GroupCounter(malware_families, True)
         for _, entry in vt_data_df.iterrows():
+            all_families.extend(entry["raw_tags"].split(" "))
+
             family_votes = extractor.fit_transform(
                 entry["raw_tags"].split(" "))
             new_entry = [
                 entry["hash"],
                 DataFolderScanner._get_malice_score(malware_benign_vote_ratio,
-                                                    entry["malware_votes"],
-                                                    entry["benign_votes"]),
+                                                    entry["malicious_votes"],
+                                                    entry["harmless_votes"]),
                 *(preprocessing.normalize([family_votes], "l1")[0])
             ]
             labels_df = labels_df.append(
                 [pandas.Series(new_entry, index=labels_df.columns)],
                 ignore_index=True)
+
+        # Print all outliers that were not considered into malware families
+        # groups
+        extractor = GroupCounter(malware_families, True, True, 0.05)
+        extractor.fit_transform(all_families)
 
         # Dump data frame to CSV file
         labels_df.to_csv(DikeConfig.MALWARE_LABELS, index=False)
@@ -238,7 +261,7 @@ class DataFolderScanner:
                        vt_scan_interval: int = 0) -> None:
         """Starts the continuous scanning of a given folder, containing benign
         programs or malware.
-
+W
         The hashes of the new files from the malware folder are scanned
         periodically with VirusTotal. This step is skipped for the benign ones,
         which are assumed completely clear.
@@ -258,7 +281,7 @@ class DataFolderScanner:
             folder_watch_interval (int): Number of seconds between two
                                          consecutive scans of the given
                                          folder
-            vt_scan_interval (int, optional): Number of seconds between two 
+            vt_scan_interval (int, optional): Number of seconds between two
                                               consecutive scans of a malware
                                               hash with VirusTotal. Only for
                                               malware folder scanning and useful
