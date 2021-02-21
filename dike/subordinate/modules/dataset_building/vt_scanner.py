@@ -20,7 +20,7 @@ class FileResults(dict):
     raw_tags: typing.List[str] = []
 
     def __init__(self, benign_votes: int, malware_votes: int,
-                 raw_tags: typing.List[str]):
+                 raw_tags: typing.List[str]) -> None:
         """Initializes the FileResults instance."""
         dict.__init__(self,
                       benign_votes=benign_votes,
@@ -32,7 +32,7 @@ class VirusTotalScanner:
     """Class for scanning with Virus Total a file hash"""
     _api_client: vt.Client = None
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str) -> None:
         """Initializes the VirusTotalScanner instance.
 
         Args:

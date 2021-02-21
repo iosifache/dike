@@ -26,7 +26,7 @@ class DataFolderScanner:
     def __init__(self,
                  vt_api_key: str = None,
                  malware_families: dict = None,
-                 malware_benign_vote_ratio: int = 0):
+                 malware_benign_vote_ratio: int = 0) -> None:
         """Initializes the DataFolderScanner instance.
 
         Args:

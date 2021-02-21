@@ -9,14 +9,18 @@ dike/subordinate/data/datasets/full/malware/*
 !dike/subordinate/data/datasets/full/benign/.gitkeep
 !dike/subordinate/data/datasets/full/malware/.gitkeep
 
+# Trained models
+dike/subordinate/data/trained_models/*
+!dike/subordinate/data/trained_models/.gitkeep
+
+# Secrets
+dike/configuration/user/secrets.yaml
+
 # Logs
 dike/subordinate/data/qiling/logs/*
 !dike/subordinate/data/qiling/logs/.gitkeep
 dike/subordinate/data/qiling/rootfs/*
 !dike/subordinate/data/qiling/rootfs/.gitkeep
-
-# Secrets
-dike/configuration/user/secrets.yaml
 
 # Notes
 NOTES.md

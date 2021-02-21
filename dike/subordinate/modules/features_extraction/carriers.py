@@ -21,7 +21,7 @@ class SectionCharacteristics(dict):
     virtual_size: int = 0
 
     def __init__(self, name: str, entropy: float, raw_size: int,
-                 virtual_size: int):
+                 virtual_size: int) -> None:
         """Initializes the SectionCharacteristics instance.
         """
         dict.__init__(self,

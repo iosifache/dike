@@ -48,7 +48,7 @@ class FileResults(dict):
     raw_tags: typing.List[str] = []
 
     def __init__(self, benign_votes: int, malware_votes: int,
-                 raw_tags: typing.List[str]):
+                 raw_tags: typing.List[str]) -> None:
         dict.__init__(self,
                       benign_votes=benign_votes,
                       malware_votes=malware_votes,
@@ -61,7 +61,7 @@ class VirusTotalScanner:
     """
     _api_client: vt.Client = None
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str) -> None:
         self._api_client = vt.Client(api_key)
 
     def __del__(self):
