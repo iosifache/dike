@@ -15,7 +15,7 @@ class DatabaseWorker:
     _collection_name: str = None
 
     def __init__(self, host: str, port: int, username: str, password: str,
-                 database: str):
+                 database: str) -> None:
         """Initializes the DatabaseWorker instance.
 
         Args:

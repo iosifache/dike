@@ -72,13 +72,11 @@ class Counter(Preprocessor):
     def _transform_each(self, X: np.array, y: np.array = None) -> int:
         return len(X)
 
-    def transform(self,
-                  X: np.array,
-                  y: np.array = None) -> typing.List[typing.List[int]]:
+    def transform(self, X: np.array, y: np.array = None) -> typing.List[int]:
         """Same as the corresponding method of the parent class
 
         Returns:
-            int: Count of the vector elements
+            typing.List[int]: Count of the vector elements
         """
         return [self._transform_each(x, y) for x in X]
 
@@ -87,10 +85,10 @@ class CountVectorizer(Preprocessor):
     """Class representing a preprocessor for counting the words into a list"""
     _inner_model: StandardCountVectorizer = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._inner_model = StandardCountVectorizer()
 
-    def fit(self, X: np.array, y: np.array = None) -> Counter:
+    def fit(self, X: np.array, y: np.array = None) -> CountVectorizer:
         """Same as the corresponding method of the parent class"""
         # Transform list to phrase
         transformed_X = []
@@ -139,7 +137,8 @@ class NGrams(Preprocessor):
     to_lowercase: bool = False
     valid_charset: Charset = None
 
-    def __init__(self, n: int, to_lowercase: bool, valid_charset: Charset):
+    def __init__(self, n: int, to_lowercase: bool,
+                 valid_charset: Charset) -> None:
         """Initializes the NGrams instance.
 
         Args:
@@ -297,25 +296,53 @@ class GroupCounter(Preprocessor):
 class SameLengthImputer(Preprocessor):
     """Class representing a preprocessor that imputes the lines of a matrix to
     have the same length"""
-    def fit(self, X: np.array, y: np.array = None) -> Identity:
+    desired_length: int = 0
+
+    def __init__(self, desired_length: int = 0) -> None:
+        """Initialized the SameLengthImputer instance.
+
+        Args:
+            desired_length (int, optional): Length of the imputed samples.
+                                            Defaults to 0, in case of the desire
+                                            to reach the maximum length of the
+                                            samples.
+        """
+        self.desired_length = desired_length
+
+    def fit(self, X: np.array, y: np.array = None) -> SameLengthImputer:
         """Same as the corresponding method of the parent class"""
         return self
 
-    def transform(self, X: np.array, y: np.array = None) -> typing.Any:
-        """Same as the corresponding method of the parent class
-
-        Returns:
-            typing.Any: Input data
-        """
-        first_element = X[0][0]
+    # pylint: disable=unused-argument
+    def _transform_each(self,
+                        X: np.array,
+                        y: np.array = None,
+                        actual_desired_length: int = 0) -> typing.List[int]:
+        # Verify what element needs to be used on padding
+        first_element = X[0]
         if (isinstance(first_element, int)
                 or isinstance(first_element, float)):
             value = 0
         elif isinstance(first_element, str):
             value = ""
 
-        max_length = max([len(line) for line in X])
-        for line in X:
-            to_add = max_length - len(line)
-            line.extend(to_add * [value])
-        return pandas.DataFrame(X)
+        # Pad until the desired length is reached
+        to_add = actual_desired_length - len(X)
+        X.extend(to_add * [value])
+
+    def transform(self,
+                  X: np.array,
+                  y: np.array = None) -> typing.List[typing.List[typing.Any]]:
+        """Same as the corresponding method of the parent class
+
+        Returns:
+            typing.List[typing.List[typing.Any]]: Imputed data
+        """
+        # Get the desired length (maximum line length or the set one)
+        if (self.desired_length == 0):
+            actual_desired_length = max([len(line) for line in X])
+        else:
+            actual_desired_length = self.desired_length
+
+        return pandas.DataFrame(
+            [self._transform_each(x, y, actual_desired_length) for x in X])

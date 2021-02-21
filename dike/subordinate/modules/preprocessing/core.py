@@ -1,10 +1,10 @@
 import typing
 
+import joblib
 import numpy as np
 import pandas
 import scipy
 from configuration.dike import DikeConfig
-from joblib import dump as joblib_dump
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import Binarizer, KBinsDiscretizer, MinMaxScaler
 from subordinate.modules.features_extraction.types import ExtractorsType
@@ -17,13 +17,14 @@ from utils.configuration import ConfigurationSpace, ConfigurationWorker
 
 class PreprocessingCore:
     """Class for preprocessing data by applying preprocessors"""
+    _is_loaded: bool = False
     _extractors_config: typing.Any = None
     _preprocessors_config: typing.Any = None
     _preprocessors: typing.List[Preprocessor] = []
     _columns_to_be_filled: list = []
     _last_scalar_model: MinMaxScaler = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initializes the PreprocessingCore instance."""
         # Read the user configuration
         configuration_worker = ConfigurationWorker()
@@ -105,29 +106,34 @@ class PreprocessingCore:
 
         self._preprocessors.append(preprocessor)
 
-    def _impute_values(self, X: np.array) -> np.array:
-        # Impute missing values
-        included_transformers = [(str(i), SameLengthImputer(), i)
-                                 for i in self._columns_to_be_filled]
+    def _impute_values(self, X: np.array, desired_length: int = 0) -> np.array:
+        if (desired_length == 0):
+            # Impute missing values
+            included_transformers = [(str(i), SameLengthImputer(), i)
+                                     for i in self._columns_to_be_filled]
 
-        transformer = ColumnTransformer(included_transformers,
-                                        remainder="passthrough")
-        X_imputed = transformer.fit_transform(X)
+            transformer = ColumnTransformer(included_transformers,
+                                            remainder="passthrough")
+            X_imputed = transformer.fit_transform(X)
 
-        # Reorder the matrix after the imputation
-        imputed_features_df = pandas.DataFrame(X_imputed)
-        columns_count = len(imputed_features_df.columns)
-        modified_order = []
-        modified_order.extend(self._columns_to_be_filled)
-        for i in range(columns_count):
-            if i not in modified_order:
-                modified_order.append(i)
-        real_order = columns_count * [0]
-        for index, modified_index in enumerate(modified_order):
-            real_order[modified_index] = index
-        imputed_features_df = imputed_features_df[real_order]
+            # Reorder the matrix after the imputation
+            imputed_features_df = pandas.DataFrame(X_imputed)
+            columns_count = len(imputed_features_df.columns)
+            modified_order = []
+            modified_order.extend(self._columns_to_be_filled)
+            for i in range(columns_count):
+                if i not in modified_order:
+                    modified_order.append(i)
+            real_order = columns_count * [0]
+            for index, modified_index in enumerate(modified_order):
+                real_order[modified_index] = index
+            imputed_features_df = imputed_features_df[real_order]
 
-        return imputed_features_df.values
+            return imputed_features_df.values
+
+        # If the desired length is set, then ensure that each vector has that
+        # length
+        return SameLengthImputer(desired_length).fit_transform(X)
 
     def preprocess(self, X: np.array) -> np.array:
         """Preprocesses the given features.
@@ -145,26 +151,40 @@ class PreprocessingCore:
         processed_features = []
         for index, preprocessor in enumerate(self._preprocessors):
             features = [x[index] for x in X]
-            processed_features.append(preprocessor.fit_transform(features))
+            try:
+                processed_features.append(preprocessor.transform(features))
+            except ValueError:
+                # If there is a differences between features count, pad the
+                # vectors
+                features = self._impute_values(features,
+                                               preprocessor.n_features_in_)
+                processed_features.append(preprocessor.transform(features))
         processed_features = list(map(list, zip(*processed_features)))
 
         # Drop the array and sparse matrix representations
         converted_features = []
-        for sample_id, _ in enumerate(processed_features):
+        for preprocessor_id, _ in enumerate(processed_features):
             converted_features.append(list())
-            for feature_id in range(len(processed_features[sample_id])):
-                feature = processed_features[sample_id][feature_id]
+            for feature_id in range(len(processed_features[preprocessor_id])):
+                feature = processed_features[preprocessor_id][feature_id]
                 if isinstance(feature, scipy.sparse.csr.csr_matrix):
-                    converted_features[sample_id].extend(feature.toarray()[0])
+                    converted_features[preprocessor_id].extend(
+                        feature.toarray()[0])
                 elif isinstance(feature, list):
-                    converted_features[sample_id].extend(feature)
+                    converted_features[preprocessor_id].extend(feature)
                 else:
-                    converted_features[sample_id].append(feature)
+                    converted_features[preprocessor_id].append(feature)
 
         # Apply a scalar
-        self._last_scalar_model = MinMaxScaler()
-        converted_features = self._last_scalar_model.fit_transform(
-            converted_features)
+        if self._is_loaded:
+            converted_features = self._last_scalar_model.transform(
+                converted_features)
+        else:
+            # If the core is not loaded from dumped models, then create a new
+            # scalar, fit it and transform the data
+            self._last_scalar_model = MinMaxScaler()
+            converted_features = self._last_scalar_model.fit_transform(
+                converted_features)
 
         return converted_features
 
@@ -176,11 +196,34 @@ class PreprocessingCore:
         """
         # Dump each preprocessor
         for index, preprocessor in enumerate(self._preprocessors):
-            filename = DikeConfig.TRAINED_MODEL_PREPROCESSOR_MODEL.format(
-                model_name, index)
-            joblib_dump(preprocessor, filename)
+            preprocessor_model_filename = \
+                DikeConfig.TRAINED_MODEL_PREPROCESSOR_MODEL.format(model_name,\
+                    index)
+            joblib.dump(preprocessor, preprocessor_model_filename)
 
         # Dump the scalar
         filename = DikeConfig.TRAINED_MODEL_PREPROCESSOR_MODEL.format(
             model_name, DikeConfig.TRAINED_MODEL_SCALAR_MODEL)
-        joblib_dump(self._last_scalar_model, filename)
+        joblib.dump(self._last_scalar_model, filename)
+
+    def load(self, model_name: str, preprocessors_count: int) -> None:
+        """Loads the preprocessor and the scalar from file.
+
+        Args:
+            model_name (str): Name of the trained model
+            preprocessors_count (int): Number of saved preprocessors
+        """
+        # Load each preprocessor
+        for preprocessor_id in range(preprocessors_count):
+            preprocessor_model_filename = \
+                DikeConfig.TRAINED_MODEL_PREPROCESSOR_MODEL.format(model_name,\
+                    preprocessor_id)
+            self._preprocessors.append(
+                joblib.load(preprocessor_model_filename))
+
+        # Dump the scalar
+        scalar_model_filename = DikeConfig.TRAINED_MODEL_PREPROCESSOR_MODEL.format(
+            model_name, DikeConfig.TRAINED_MODEL_SCALAR_MODEL)
+        self._last_scalar_model = joblib.load(scalar_model_filename)
+
+        self._is_loaded = True

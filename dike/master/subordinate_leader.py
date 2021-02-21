@@ -16,7 +16,8 @@ class _Connection:
     connection: rpyc.Connection = None
     is_busy: bool = False
 
-    def __init__(self, host: str, port: int, connection: rpyc.Connection):
+    def __init__(self, host: str, port: int,
+                 connection: rpyc.Connection) -> None:
         """Initializes the _Connection instance.
 
         Args:
@@ -39,7 +40,7 @@ class SubordinateLeader(object, metaclass=Singleton):
     _stop_needed: bool = False
 
     def __init__(self, default_port_number: int, service_name: str,
-                 answers_checking_interval: int):
+                 answers_checking_interval: int) -> None:
         """Initializes the SubordinateLeader instance.
 
         Args:
@@ -157,7 +158,8 @@ class SubordinateLeader(object, metaclass=Singleton):
                                               is not desired. Defaults to True.
 
         Returns:
-            bool: [description]
+            bool: Boolean indicating if the disconnection was successfully
+                  executed
         """
         for connection in self._connections:
             if (connection.host == host and connection.port == port):

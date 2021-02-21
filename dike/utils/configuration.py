@@ -26,7 +26,7 @@ class ConfigurationWorker(object, metaclass=Singleton):
     operations such as opening, parsing, and querying.
     """
     class _Loader(yaml.SafeLoader):
-        def __init__(self, stream):
+        def __init__(self, stream) -> None:
             self._root = os.path.split(stream.name)[0]
 
             # pylint: disable=protected-access
@@ -41,7 +41,7 @@ class ConfigurationWorker(object, metaclass=Singleton):
 
     _config: typing.Any = None
 
-    def __init__(self, filename: str = None):
+    def __init__(self, filename: str = None) -> None:
         """Initializes the ConfigurationWorker instance.
 
         Args:
