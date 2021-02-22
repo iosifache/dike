@@ -330,6 +330,8 @@ class SameLengthImputer(Preprocessor):
         to_add = actual_desired_length - len(X)
         X.extend(to_add * [value])
 
+        return X
+
     def transform(self,
                   X: np.array,
                   y: np.array = None) -> typing.List[typing.List[typing.Any]]:
@@ -338,11 +340,11 @@ class SameLengthImputer(Preprocessor):
         Returns:
             typing.List[typing.List[typing.Any]]: Imputed data
         """
+
         # Get the desired length (maximum line length or the set one)
         if (self.desired_length == 0):
             actual_desired_length = max([len(line) for line in X])
         else:
             actual_desired_length = self.desired_length
 
-        return pandas.DataFrame(
-            [self._transform_each(x, y, actual_desired_length) for x in X])
+        return [self._transform_each(x, y, actual_desired_length) for x in X]
