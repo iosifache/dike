@@ -5,12 +5,14 @@ import numpy as np
 import pandas
 import scipy
 from configuration.dike import DikeConfig
-from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import Binarizer, KBinsDiscretizer, MinMaxScaler
 from subordinate.modules.features_extraction.types import ExtractorsType
-from subordinate.modules.preprocessing.preprocessors import (
-    Counter, CountVectorizer, GroupCounter, Identity, NGrams, Preprocessor,
-    SameLengthImputer)
+from subordinate.modules.preprocessing.preprocessors import (Counter,
+                                                             CountVectorizer,
+                                                             GroupCounter,
+                                                             Identity, NGrams,
+                                                             Preprocessor,
+                                                             SameLengthImputer)
 from subordinate.modules.preprocessing.types import PreprocessorsTypes
 from utils.configuration import ConfigurationSpace, ConfigurationWorker
 
@@ -108,26 +110,15 @@ class PreprocessingCore:
 
     def _impute_values(self, X: np.array, desired_length: int = 0) -> np.array:
         if (desired_length == 0):
-            # Impute missing values
-            included_transformers = [(str(i), SameLengthImputer(), i)
-                                     for i in self._columns_to_be_filled]
+            imputed_features_df = pandas.DataFrame(X)
+            for column_id in self._columns_to_be_filled:
+                # Apply the imputer to each column
+                column = imputed_features_df.iloc[:, column_id].values
+                imputed_values = SameLengthImputer().fit_transform(column)
 
-            transformer = ColumnTransformer(included_transformers,
-                                            remainder="passthrough")
-            X_imputed = transformer.fit_transform(X)
-
-            # Reorder the matrix after the imputation
-            imputed_features_df = pandas.DataFrame(X_imputed)
-            columns_count = len(imputed_features_df.columns)
-            modified_order = []
-            modified_order.extend(self._columns_to_be_filled)
-            for i in range(columns_count):
-                if i not in modified_order:
-                    modified_order.append(i)
-            real_order = columns_count * [0]
-            for index, modified_index in enumerate(modified_order):
-                real_order[modified_index] = index
-            imputed_features_df = imputed_features_df[real_order]
+                # Insert the imputed value into the cell
+                for index, value in enumerate(imputed_values):
+                    imputed_features_df.at[index, column_id] = list(value)
 
             return imputed_features_df.values
 
@@ -151,14 +142,10 @@ class PreprocessingCore:
         processed_features = []
         for index, preprocessor in enumerate(self._preprocessors):
             features = [x[index] for x in X]
-            try:
+            if self._is_loaded:
                 processed_features.append(preprocessor.transform(features))
-            except ValueError:
-                # If there is a differences between features count, pad the
-                # vectors
-                features = self._impute_values(features,
-                                               preprocessor.n_features_in_)
-                processed_features.append(preprocessor.transform(features))
+            else:
+                processed_features.append(preprocessor.fit_transform(features))
         processed_features = list(map(list, zip(*processed_features)))
 
         # Drop the array and sparse matrix representations

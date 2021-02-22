@@ -30,6 +30,8 @@ class DikeConfig:
     TRAINED_MODEL_MACHINE_LEARNING_MODEL = TRAINED_MODELS_FOLDER + "{}/ml.model"
     TRAINED_MODEL_CONFIGURATION = TRAINED_MODELS_FOLDER + \
         "{}/configuration.yml"
+    TRAINED_MODEL_EVALUATION = TRAINED_MODELS_FOLDER + \
+        "{}/evaluation.json"
     TRAINED_MODEL_PREPROCESSOR_MODEL = TRAINED_MODEL_PREPROCESSORS_FOLDER + \
         "{}.model"
     TRAINED_MODEL_SCALAR_MODEL = "scalar"
@@ -39,6 +41,8 @@ class DikeConfig:
     API_CALLS_REGEX = r"^((\w)+)\("
     VT_ANTIVIRUS_MALWARE_CATEGORIES = ["malicious", "suspicious"]
     MALWARE_CATEGORIES_COUNT = 9
+    SAMPLING_STEPS_FOR_PLOTS = 10
+    EVALUATION_FILE_INDENT_SPACES = 4
 
     class MandatoryConfigurationKeys(Enum):
         """Class containing the mandatory keys from the user configuration of a
@@ -56,3 +60,4 @@ class DikeConfig:
         DIMENSIONALITY_REDUCTION_MIN_VARIANCE_ = "min_variance"
         MACHINE_LEARNING = "machine_learning"
         MACHINE_LEARNING_ALGORITHM_ = "algorithm"
+        MACHINE_LEARNING_SPLIT_RADIO_ = "split_ratio"

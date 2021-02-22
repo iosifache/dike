@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import typing
@@ -14,12 +15,13 @@ from sklearn.base import BaseEstimator
 from sklearn.decomposition import NMF, PCA, FastICA
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import cross_validate
+from sklearn.model_selection import cross_validate, train_test_split
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.svm import LinearSVC
 from sklearn.tree import DecisionTreeRegressor
 from subordinate.modules.features_extraction.core import ExtractionCore
 from subordinate.modules.features_extraction.types import ExtractorsType
+from subordinate.modules.models_management.evaluation import ModelsEvaluator
 from subordinate.modules.models_management.types import (ModelObjective,
                                                          ReductionAlgorithm,
                                                          RegressionAlgorithms)
@@ -32,6 +34,8 @@ class ModelsManagementCore:
     """Class managing the process of model training and exploitation
     (for prediction)"""
     _is_ready: bool = False
+    _is_loaded: bool = False
+    _labels_names: typing.List[str] = []
     _configuration_filename: str = None
     _dataset_filename: str = None
     _extractors_types: typing.List[ExtractorsType] = []
@@ -45,8 +49,21 @@ class ModelsManagementCore:
     _preprocessing_core: PreprocessingCore = None
     _reduction_model: BaseEstimator = None
     _ml_model: BaseEstimator = None
+    _split_ratio: float = None
     _reduced_features: np.array = None
     _model_unique_name: str = None
+    _evaluation_results: dict = None
+
+    def __init__(self, labels_names: typing.List[str] = None) -> None:
+        """Initializes the ModelsManagementCore instance.
+
+        Args:
+            labels_names (typing.List[str], optional): List of labels names.
+                                                       Defaults to None, when
+                                                       only regression models
+                                                       are used.
+        """
+        self._labels_names = labels_names
 
     def _check_and_load_configuration(self, filename: str):
         # Try to read the configuration file
@@ -116,6 +133,9 @@ class ModelsManagementCore:
                 DikeConfig.MandatoryConfigurationKeys.
                 MACHINE_LEARNING_ALGORITHM_.value]
             self._ml_algorithm = RegressionAlgorithms[ml_algorithm]
+            self._split_ratio = ml_configuration[
+                DikeConfig.MandatoryConfigurationKeys.
+                MACHINE_LEARNING_SPLIT_RADIO_.value]
         except:
             Logger.log(
                 "Invalid machine learning algorithm specified in the model configuration file",
@@ -290,15 +310,29 @@ class ModelsManagementCore:
         elif (self._model_objective == ModelObjective.CLASSIFICATION):
             prediction_model = MultiOutputRegressor(regression_model)
 
+        # Split the dataset
+        X_train, X_test, y_train, y_test = train_test_split(
+            self._reduced_features, y, train_size=self._split_ratio)
+
         # Use cross validation to select the best model
         cv_results = cross_validate(prediction_model,
-                                    self._reduced_features,
-                                    y,
+                                    X_train,
+                                    y_train,
                                     return_estimator=True,
                                     scoring="neg_root_mean_squared_error",
                                     n_jobs=-1)
         self._ml_model = cv_results["estimator"][np.argmax(
             cv_results["test_score"])]
+
+        # Predict on the test samples and compute the accuracy measures
+        y_pred = self._ml_model.predict(X_test)
+        if (self._model_objective == ModelObjective.MALICE):
+            self._evaluation_results = ModelsEvaluator.evaluate_regression(
+                y_test, y_pred)
+        elif (self._model_objective == ModelObjective.CLASSIFICATION):
+            self._evaluation_results = \
+                ModelsEvaluator.evaluate_soft_multilabel_classification(
+                    y_test, y_pred, self._labels_names)
 
         # Generate an unique name for the model to be used to dump it
         self._model_unique_name = self._generate_unique_model_name(
@@ -384,6 +418,10 @@ class ModelsManagementCore:
         Returns:
             str: Unique name of the model
         """
+        # Check if the model is a loaded one
+        if self._is_loaded:
+            return self._model_unique_name
+
         # Create the folder structure
         model_dump_folder = os.path.join(DikeConfig.TRAINED_MODELS_FOLDER,
                                          self._model_unique_name)
@@ -418,6 +456,14 @@ class ModelsManagementCore:
         reduced_features_df.to_csv(reduced_features_path,
                                    header=False,
                                    index=False)
+
+        # Dump the results
+        evaluation_path = DikeConfig.TRAINED_MODEL_EVALUATION.format(
+            self._model_unique_name)
+        with open(evaluation_path, "w") as evaluation_output_file:
+            json.dump(self._evaluation_results,
+                      evaluation_output_file,
+                      indent=DikeConfig.EVALUATION_FILE_INDENT_SPACES)
 
         # Log success
         Logger.log(
@@ -463,6 +509,9 @@ class ModelsManagementCore:
                                               header=None,
                                               index_col=False)
         self._reduced_features = reduced_features_df.values
+
+        # Mark the model as loaded
+        self._is_loaded = True
 
         # Log success
         Logger.log("Successfully loaded model {}".format(model_name),
