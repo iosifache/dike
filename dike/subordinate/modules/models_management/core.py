@@ -17,6 +17,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_validate, train_test_split
 from sklearn.multioutput import MultiOutputRegressor
+from sklearn.preprocessing import normalize
 from sklearn.svm import LinearSVC
 from sklearn.tree import DecisionTreeRegressor
 from subordinate.modules.features_extraction.core import ExtractionCore
@@ -27,6 +28,7 @@ from subordinate.modules.models_management.types import (ModelObjective,
                                                          RegressionAlgorithms)
 from subordinate.modules.preprocessing.core import PreprocessingCore
 from subordinate.modules.preprocessing.types import PreprocessorsTypes
+from utils.configuration import ConfigurationSpace, ConfigurationWorker
 from utils.logger import LoggedMessageType, Logger
 
 
@@ -35,7 +37,6 @@ class ModelsManagementCore:
     (for prediction)"""
     _is_ready: bool = False
     _is_loaded: bool = False
-    _labels_names: typing.List[str] = []
     _configuration_filename: str = None
     _dataset_filename: str = None
     _extractors_types: typing.List[ExtractorsType] = []
@@ -53,17 +54,6 @@ class ModelsManagementCore:
     _reduced_features: np.array = None
     _model_unique_name: str = None
     _evaluation_results: dict = None
-
-    def __init__(self, labels_names: typing.List[str] = None) -> None:
-        """Initializes the ModelsManagementCore instance.
-
-        Args:
-            labels_names (typing.List[str], optional): List of labels names.
-                                                       Defaults to None, when
-                                                       only regression models
-                                                       are used.
-        """
-        self._labels_names = labels_names
 
     def _check_and_load_configuration(self, filename: str):
         # Try to read the configuration file
@@ -330,9 +320,10 @@ class ModelsManagementCore:
             self._evaluation_results = ModelsEvaluator.evaluate_regression(
                 y_test, y_pred)
         elif (self._model_objective == ModelObjective.CLASSIFICATION):
+            labels = list(self._dataset.columns)[2:]
             self._evaluation_results = \
                 ModelsEvaluator.evaluate_soft_multilabel_classification(
-                    y_test, y_pred, self._labels_names)
+                    y_test, y_pred, labels)
 
         # Generate an unique name for the model to be used to dump it
         self._model_unique_name = self._generate_unique_model_name(
@@ -401,9 +392,10 @@ class ModelsManagementCore:
         if (self._model_objective == ModelObjective.MALICE):
             returned_result["malice"] = result[0]
         elif (self._model_objective == ModelObjective.CLASSIFICATION):
-            malware_categories = list(self._dataset.columns)[2:]
+            labels = list(self._dataset.columns)[2:]
+            normalized_memberships = normalize([result[0]], "l1")[0]
             returned_result["membership"] = dict(
-                zip(malware_categories, result[0]))
+                zip(labels, normalized_memberships))
         if similarity_analysis:
             returned_result["similar"] = [{
                 "hash": details[0],
@@ -432,7 +424,7 @@ class ModelsManagementCore:
         os.mkdir(preprocessors_models_dump_folder)
 
         # Copy the configuration file
-        configuration_filename = DikeConfig.TRAINED_MODEL_CONFIGURATION.format(
+        configuration_filename = DikeConfig.TRAINED_MODEL_TRAINING_CONFIGURATION.format(
             self._model_unique_name)
         shutil.copyfile(self._configuration_filename, configuration_filename)
 
@@ -457,13 +449,36 @@ class ModelsManagementCore:
                                    header=False,
                                    index=False)
 
-        # Dump the results
+        # Dump the results of the evaluation
         evaluation_path = DikeConfig.TRAINED_MODEL_EVALUATION.format(
             self._model_unique_name)
         with open(evaluation_path, "w") as evaluation_output_file:
             json.dump(self._evaluation_results,
                       evaluation_output_file,
-                      indent=DikeConfig.EVALUATION_FILE_INDENT_SPACES)
+                      indent=DikeConfig.JSON_FILES_INDENT_SPACES)
+
+        # Get the configuration
+        ml_config = ConfigurationWorker().get_configuration_space(
+            ConfigurationSpace.MACHINE_LEARNING)
+
+        # Dump the prediction configuration
+        if (self._model_objective == ModelObjective.MALICE):
+            prediction_configuration = {
+                "min_malware_malice":
+                ml_config["default_min_thresholds"]["malice"]
+            }
+        elif (self._model_objective == ModelObjective.CLASSIFICATION):
+            prediction_configuration = {
+                "min_category_membership":
+                ml_config["default_min_thresholds"]["class_membership"]
+            }
+        prediction_configuration_path = DikeConfig.TRAINED_MODEL_PREDICTION_CONFIGURATION.format(
+            self._model_unique_name)
+        with open(prediction_configuration_path,
+                  "w") as prediction_configuration_output_file:
+            json.dump(prediction_configuration,
+                      prediction_configuration_output_file,
+                      indent=DikeConfig.JSON_FILES_INDENT_SPACES)
 
         # Log success
         Logger.log(
@@ -481,7 +496,7 @@ class ModelsManagementCore:
         self._model_unique_name = model_name
 
         # Get and load the configuration
-        configuration_filename = DikeConfig.TRAINED_MODEL_CONFIGURATION.format(
+        configuration_filename = DikeConfig.TRAINED_MODEL_TRAINING_CONFIGURATION.format(
             model_name)
         self._configuration_filename = configuration_filename
 

@@ -42,16 +42,21 @@ extractors:
             - A
             - W
 
+dataset_builder:
+    malware_families: !include malware_families.yaml
+    malware_benign_vote_ratio: 2
+    min_ignored_percent: 0.03
+
 preprocessors:
     ngrams:
         n: 2
         to_lowercase: True
         valid_charset: LOWERCASE
 
-dataset_builder:
-    malware_families: !include malware_families.yaml
-    malware_benign_vote_ratio: 2
-    min_ignored_percent: 0.03
+machine_learning:
+    default_min_thresholds:
+        malice: 0.5
+        class_membership: 0.2
 
 database:
     hostname: localhost

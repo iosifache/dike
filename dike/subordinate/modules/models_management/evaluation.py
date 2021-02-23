@@ -20,8 +20,11 @@ class ModelsEvaluator:
         The returned metrics, as keys into the returned dictionary, are:
         - maximum error ("max_error" key);
         - mean average error ("mean_average_error" key);
-        - root mean squared error ("root_mean_squared_error" key); and
-        - R squared score ("r2_score" key).
+        - root mean squared error ("root_mean_squared_error" key);
+        - R squared score ("r2_score" key); and
+        - errors histogram ("errors_histogram"), containing:
+            - the number of samplings ("sampling_steps" key);
+            - histogram values for each bin ("values" key).
 
         Args:
             y_real (np.array): Real values
@@ -32,11 +35,23 @@ class ModelsEvaluator:
         """
         results = dict()
 
+        # Get the generic errors and scores
         results["max_error"] = max_error(y_real, y_pred)
         results["mean_average_error"] = mean_absolute_error(y_real, y_pred)
         results["root_mean_squared_error"] = math.sqrt(
             mean_squared_error(y_real, y_pred))
         results["r2_score"] = r2_score(y_real, y_pred)
+
+        # Create the histograms of errors
+        errors = [abs(real - pred) for real, pred in zip(y_real, y_pred)]
+        max_range_value = 1 + 1 / DikeConfig.SAMPLING_STEPS_FOR_HISTOGRAM
+        bins = np.arange(0, max_range_value,
+                         1 / DikeConfig.SAMPLING_STEPS_FOR_HISTOGRAM)
+        hist, _ = np.histogram(errors, bins=bins)
+        results["errors_histogram"] = {
+            "sampling_steps": DikeConfig.SAMPLING_STEPS_FOR_HISTOGRAM,
+            "values": hist.tolist()
+        }
 
         return results
 
@@ -95,8 +110,10 @@ class ModelsEvaluator:
             y_label_test = [sample[label_id] for sample in y_real]
             y_label_pred = [sample[label_id] for sample in y_pred]
 
+            max_range_value = 1 + 1 / DikeConfig.SAMPLING_STEPS_FOR_PLOTS
             for threashold in np.arange(
-                    0, 1, 1 / DikeConfig.SAMPLING_STEPS_FOR_PLOTS):
+                    0, max_range_value,
+                    1 / DikeConfig.SAMPLING_STEPS_FOR_PLOTS):
                 # Binarize the values considering the current threshold
                 binarized_y_label_test = samples_count * [0]
                 binarized_y_label_pred = samples_count * [0]
