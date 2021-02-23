@@ -12,9 +12,9 @@ class ConfigurationSpace(Enum):
     MASTER_SERVER = "master_server"
     SUBORDINATE_SERVER = "subordintate_server"
     EXTRACTORS = "extractors"
-    PREPROCESSORS = "preprocessors"
     DATASET_BUILDER = "dataset_builder"
-    DIMENSIONALITY_REDUCTION = "dimensionality_reduction"
+    PREPROCESSORS = "preprocessors"
+    MACHINE_LEARNING = "machine_learning"
     DATABASE = "database"
     SECRETS = "secrets"
 

@@ -27,14 +27,16 @@ class DikeConfig:
     VT_DATA_FILE = FULL_DATASET_FOLDER + "vt_data.csv"
     TRAINED_MODEL_FEATURES_FILE = TRAINED_MODELS_FOLDER + "{}/features.csv"
     TRAINED_MODEL_REDUCTION_MODEL = TRAINED_MODELS_FOLDER + "{}/reduction.model"
-    TRAINED_MODEL_MACHINE_LEARNING_MODEL = TRAINED_MODELS_FOLDER + "{}/ml.model"
-    TRAINED_MODEL_CONFIGURATION = TRAINED_MODELS_FOLDER + \
-        "{}/configuration.yml"
-    TRAINED_MODEL_EVALUATION = TRAINED_MODELS_FOLDER + \
-        "{}/evaluation.json"
+    TRAINED_MODEL_SCALAR_MODEL = "scalar"
     TRAINED_MODEL_PREPROCESSOR_MODEL = TRAINED_MODEL_PREPROCESSORS_FOLDER + \
         "{}.model"
-    TRAINED_MODEL_SCALAR_MODEL = "scalar"
+    TRAINED_MODEL_MACHINE_LEARNING_MODEL = TRAINED_MODELS_FOLDER + "{}/ml.model"
+    TRAINED_MODEL_TRAINING_CONFIGURATION = TRAINED_MODELS_FOLDER + \
+        "{}/training_configuration.yml"
+    TRAINED_MODEL_EVALUATION = TRAINED_MODELS_FOLDER + \
+        "{}/evaluation.json"
+    TRAINED_MODEL_PREDICTION_CONFIGURATION = TRAINED_MODELS_FOLDER + \
+        "{}/prediction_configuration.json"
 
     # Constants
     QILING_LOG_EXTENSION = "qlog"
@@ -42,7 +44,8 @@ class DikeConfig:
     VT_ANTIVIRUS_MALWARE_CATEGORIES = ["malicious", "suspicious"]
     MALWARE_CATEGORIES_COUNT = 9
     SAMPLING_STEPS_FOR_PLOTS = 10
-    EVALUATION_FILE_INDENT_SPACES = 4
+    SAMPLING_STEPS_FOR_HISTOGRAM = 100
+    JSON_FILES_INDENT_SPACES = 4
 
     class MandatoryConfigurationKeys(Enum):
         """Class containing the mandatory keys from the user configuration of a

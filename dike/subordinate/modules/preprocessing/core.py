@@ -7,12 +7,9 @@ import scipy
 from configuration.dike import DikeConfig
 from sklearn.preprocessing import Binarizer, KBinsDiscretizer, MinMaxScaler
 from subordinate.modules.features_extraction.types import ExtractorsType
-from subordinate.modules.preprocessing.preprocessors import (Counter,
-                                                             CountVectorizer,
-                                                             GroupCounter,
-                                                             Identity, NGrams,
-                                                             Preprocessor,
-                                                             SameLengthImputer)
+from subordinate.modules.preprocessing.preprocessors import (
+    Counter, CountVectorizer, GroupCounter, Identity, NGrams, Preprocessor,
+    SameLengthImputer)
 from subordinate.modules.preprocessing.types import PreprocessorsTypes
 from utils.configuration import ConfigurationSpace, ConfigurationWorker
 
@@ -143,7 +140,14 @@ class PreprocessingCore:
         for index, preprocessor in enumerate(self._preprocessors):
             features = [x[index] for x in X]
             if self._is_loaded:
-                processed_features.append(preprocessor.transform(features))
+                try:
+                    processed_features.append(preprocessor.transform(features))
+                except ValueError:
+                    # If there is a differences between features count, pad the
+                    # vectors
+                    features = self._impute_values(features,
+                                                   preprocessor.n_features_in_)
+                    processed_features.append(preprocessor.transform(features))
             else:
                 processed_features.append(preprocessor.fit_transform(features))
         processed_features = list(map(list, zip(*processed_features)))
