@@ -15,5 +15,7 @@ class ExtractorsType(Enum):
     """Enumeration for all possible types of an extractors"""
     STATIC_STRINGS = "StaticStrings"
     STATIC_PE_CHARACTERISTICS = "StaticPECharacteristics"
+    STATIC_OPCODES = "StaticOpcodes"
+    STATIC_APIS = "StaticAPIs"
     DYNAMIC_OPCODES = "DynamicOpcodes"
     DYNAMIC_APIS = "DynamicAPIs"

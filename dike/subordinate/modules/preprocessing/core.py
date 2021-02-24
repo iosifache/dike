@@ -54,8 +54,9 @@ class PreprocessingCore:
                 "valid_charset":
                 charset
             }
-        elif (preprocessor_type == PreprocessorsTypes.GROUP_COUNTER.name):
-            if (parent_extractor_type == ExtractorsType.DYNAMIC_OPCODES):
+        elif (preprocessor_type == PreprocessorsTypes.GROUP_COUNTER):
+            if (parent_extractor_type == ExtractorsType.STATIC_OPCODES or
+                    parent_extractor_type == ExtractorsType.DYNAMIC_OPCODES):
                 arguments = {
                     "categories":
                     self._extractors_config["opcodes"]["categories"],
@@ -67,7 +68,8 @@ class PreprocessingCore:
                     "min_ignored_percent":
                     self._extractors_config["opcodes"]["min_ignored_percent"]
                 }
-            elif (parent_extractor_type == ExtractorsType.DYNAMIC_APIS):
+            elif (parent_extractor_type == ExtractorsType.STATIC_APIS
+                  or parent_extractor_type == ExtractorsType.DYNAMIC_APIS):
                 arguments = {
                     "categories":
                     self._extractors_config["apis"]["categories"],

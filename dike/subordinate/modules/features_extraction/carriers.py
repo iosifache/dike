@@ -55,6 +55,10 @@ class StaticBucket:
                                                executable
         exported_functions (typing.List[str]): List of exported functions of the
                                                executable
+        opcodes (typing.List[str]): List of strings representing the mnemonics
+                                    of the executed opcodes
+        apis (typing.List[str]): List of strings representing the names of the
+                                 called Windows API functions names
     """
     filename: str = None
     pe_file: pefile.PE = None
@@ -66,6 +70,8 @@ class StaticBucket:
     imported_libraries: typing.List[str] = []
     imported_functions: typing.List[str] = []
     exported_functions: typing.List[str] = []
+    opcodes: typing.List[str] = []
+    apis: typing.List[str] = []
 
 
 class DynamicBucket:
