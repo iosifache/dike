@@ -5,26 +5,43 @@ class DikeConfig:
     """Class containing the default configuration of the platform
     """
     # Folders
+
+    ## Main
     DIKE_FOLDER = "/home/iosifache/Documents/dike/dike/"
+    SCRIPTS_FOLDER = DIKE_FOLDER + "scripts/"
     SUBORDINATE_FOLDER = DIKE_FOLDER + "subordinate/"
     DATA_FOLDER = SUBORDINATE_FOLDER + "data/"
+
+    ## For datasets
     DATASETS_FOLDER = DATA_FOLDER + "datasets/"
     CUSTOM_DATASETS_FOLDER = DATASETS_FOLDER + "custom/"
     FULL_DATASET_FOLDER = DATASETS_FOLDER + "full/"
     MALWARE_DATASET_FOLDER = FULL_DATASET_FOLDER + "malware/"
     BENIGN_DATASET_FOLDER = FULL_DATASET_FOLDER + "benign/"
-    QILING_FOLDER = DATA_FOLDER + "qiling/"
-    QILING_ROOTFS_FOLDER = QILING_FOLDER + "rootfs/"
-    QILING_LOGS_FOLDER = QILING_FOLDER + "logs/"
+
+    ## For trained models
     TRAINED_MODELS_FOLDER = DATA_FOLDER + "trained_models/"
     TRAINED_MODEL_PREPROCESSORS_FOLDER = TRAINED_MODELS_FOLDER + \
         "{}/preprocessors/"
 
+    ## Qiling
+    QILING_FOLDER = DATA_FOLDER + "qiling/"
+    QILING_ROOTFS_FOLDER = QILING_FOLDER + "rootfs/"
+    QILING_LOGS_FOLDER = QILING_FOLDER + "logs/"
+
+    ## Ghidra
+    GHIDRA_PROJECT_FOLDER = DATA_FOLDER + "ghidra/"
+    GHIDRA_FOLDER = "/home/iosifache/Documents/Programs/ghidra/"
+
     # Files
+
+    ## For files informations
     MALWARE_LABELS = FULL_DATASET_FOLDER + "malware_labels.csv"
     BENIGN_LABELS = FULL_DATASET_FOLDER + "benign_labels.csv"
     MALWARE_HASHES = FULL_DATASET_FOLDER + "malware_hashes.txt"
     VT_DATA_FILE = FULL_DATASET_FOLDER + "vt_data.csv"
+
+    ## For trained models
     TRAINED_MODEL_FEATURES_FILE = TRAINED_MODELS_FOLDER + "{}/features.csv"
     TRAINED_MODEL_REDUCTION_MODEL = TRAINED_MODELS_FOLDER + "{}/reduction.model"
     TRAINED_MODEL_SCALAR_MODEL = "scalar"
@@ -38,14 +55,34 @@ class DikeConfig:
     TRAINED_MODEL_PREDICTION_CONFIGURATION = TRAINED_MODELS_FOLDER + \
         "{}/prediction_configuration.json"
 
+    ## Ghidra
+    GHIDRA_HEADLESS_ANALYZER = GHIDRA_FOLDER + "support/analyzeHeadless"
+    GHIDRA_EXTRACTION_SCRIPT = SCRIPTS_FOLDER + "delegate_ghidra.py"
+
     # Constants
-    QILING_LOG_EXTENSION = "qlog"
+
+    ## For feature extraction
     API_CALLS_REGEX = r"^((\w)+)\("
     VT_ANTIVIRUS_MALWARE_CATEGORIES = ["malicious", "suspicious"]
     MALWARE_CATEGORIES_COUNT = 9
+
+    ## For trained models evaluation
     SAMPLING_STEPS_FOR_PLOTS = 10
     SAMPLING_STEPS_FOR_HISTOGRAM = 100
     JSON_FILES_INDENT_SPACES = 4
+
+    ## Qiling
+    QILING_LOG_EXTENSION = "qlog"
+
+    ## Ghidra (synced with the one from delegate_ghidra.py script)
+    GHIDRA_PROJECT_NAME = "project"
+    GHIDRA_ANALYSIS_COMMAND = GHIDRA_HEADLESS_ANALYZER + " " + \
+        GHIDRA_PROJECT_FOLDER + " " + GHIDRA_PROJECT_NAME + \
+        " -import {} -overwrite -postscript " + GHIDRA_EXTRACTION_SCRIPT + \
+        " {} {}"
+    GHIDRA_ANALYSIS_OPCODES_LINE_START = "OPCODES: "
+    GHIDRA_ANALYSIS_APIS_LINE_START = "APIS: "
+    GHIDRA_ANALYSIS_ITEMS_DELIMITATOR = ","
 
     class MandatoryConfigurationKeys(Enum):
         """Class containing the mandatory keys from the user configuration of a

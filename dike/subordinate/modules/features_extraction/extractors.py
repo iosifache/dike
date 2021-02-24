@@ -234,11 +234,9 @@ class StaticPECharacteristics(Extractor):
         ]
 
 
-class DynamicOpcodes(Extractor):
+# pylint: disable=abstract-method
+class _Opcodes(Extractor, abc.ABC):
     """Class extracting the executed opcodes
-
-    This extractor runs the executable into a controlled environment (Qemu, via
-    Qiling Framework) and extracts all opcodes executed by the processor.
 
     Extracted features are:
     - mnemonics of the executed opcodes.
@@ -262,6 +260,33 @@ class DynamicOpcodes(Extractor):
         """Same as the corresponding method of the parent class"""
         return
 
+
+class StaticOpcodes(_Opcodes):
+    """Class extracting the (possibly) executed opcodes via static analysis
+    techniques
+
+    This extractor analyzes the given executable into a decompiler and extracts
+    all opcodes (possibly) executed by the processor.
+
+    For more details about the extracted features, check the documentation of
+    the parent class _Opcodes.
+    """
+    def squeeze(
+            self, static_bucket: carriers.StaticBucket,
+            dynamic_bucket: carriers.DynamicBucket) -> typing.List[typing.Any]:
+        """Same as the corresponding method of the parent class"""
+        return [static_bucket.opcodes]
+
+
+class DynamicOpcodes(_Opcodes):
+    """Class extracting the executed opcodes via dynamic analysis techniques
+
+    This extractor runs the executable into a controlled environment (Qemu, via
+    Qiling Framework) and extracts all opcodes executed by the processor.
+
+    For more details about the extracted features, check the documentation of
+    the parent class _Opcodes.
+    """
     def squeeze(
             self, static_bucket: carriers.StaticBucket,
             dynamic_bucket: carriers.DynamicBucket) -> typing.List[typing.Any]:
@@ -269,13 +294,10 @@ class DynamicOpcodes(Extractor):
         return [dynamic_bucket.opcodes]
 
 
-class DynamicAPIs(Extractor):
+# pylint: disable=abstract-method
+class _APIs(Extractor, abc.ABC):
     """Class extracting the called Windows API functions
-
-    As the opcodes extractor, it runs the program into a controlled environment
-    (Qemu, via Qiling Framework) and parse the log file produced by the emulator
-    to discover all Windows API functions that were called during the execution.
-
+    
     Extracted features are:
     - Windows API calls.
     """
@@ -326,11 +348,45 @@ class DynamicAPIs(Extractor):
             str: Normalized name of the function
         """
         for prefix in self._ignored_prefixes:
-            name = DynamicAPIs._remove_prefix(name, prefix)
+            name = _APIs._remove_prefix(name, prefix)
         for suffix in self._ignored_suffixes:
-            name = DynamicAPIs._remove_suffix(name, suffix)
+            name = _APIs._remove_suffix(name, suffix)
         return name
 
+
+class StaticAPIs(_APIs):
+    """Class extracting the (possibly) called Windows API functions via static
+    analysis techniques
+
+    This extractor analyzes the given executable into a decompiler and extracts
+    all (possibly) called Windows API functions.
+    """
+    def extract(self, static_bucket: carriers.StaticBucket,
+                dynamic_bucket: carriers.DynamicBucket) -> None:
+        """Same as the corresponding method of the parent class"""
+        # Normalize functions names
+        static_bucket.apis = [
+            self.normalize_function_name(api) for api in static_bucket.apis
+        ]
+
+    def squeeze(
+            self, static_bucket: carriers.StaticBucket,
+            dynamic_bucket: carriers.DynamicBucket) -> typing.List[typing.Any]:
+        """Same as the corresponding method of the parent class"""
+        return [static_bucket.apis]
+
+
+class DynamicAPIs(_APIs):
+    """Class extracting the called Windows API functions via dynamic analysis
+    techniques
+
+    As the opcodes extractor, it runs the program into a controlled environment
+    (Qemu, via Qiling Framework) and parse the log file produced by the emulator
+    to discover all Windows API functions that were called during the execution.
+
+    For more details about the extracted features, check the documentation of
+    the parent class _APIs.
+    """
     def extract(self, static_bucket: carriers.StaticBucket,
                 dynamic_bucket: carriers.DynamicBucket) -> None:
         """Same as the corresponding method of the parent class"""

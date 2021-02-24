@@ -11,6 +11,8 @@ import subordinate.modules.features_extraction.carriers as carriers
 import subordinate.modules.features_extraction.extractors as extractors
 from configuration.dike import DikeConfig
 from pypattyrn.creational.singleton import Singleton
+from subordinate.modules.features_extraction.ghidra_wrapper import \
+    GhidraWrapper
 from subordinate.modules.features_extraction.types import ExtractorsType
 from utils.configuration import ConfigurationSpace, ConfigurationWorker
 
@@ -84,6 +86,7 @@ class ExtractionCore(object, metaclass=Singleton):
         content_needed = False
         pe_file_needed = False
         disassembler_needed = False
+        decompiler_needed = False
         emulator_needed = False
 
         # Create new buckets for data
@@ -92,34 +95,51 @@ class ExtractionCore(object, metaclass=Singleton):
 
         # Verify what elements are needed and set the configuration for each of
         # them
+        content_needed = False
+        pe_file_needed = False
         pe_characteristics_present = False
+        decompiler_needed = False
+        emulator_needed = False
+        disassembler_needed = False
         for extractor in self._extractors:
+            apis_present = False
+
             if ExtractionCore._check_extractor_type(
                     extractor, extractors.StaticStrings()):
+                # Set the configuration
                 extractor.set_configuration(
                     self._configuration["strings"]["minimum_string_length"],
                     self._configuration["strings"]["minimum_occurances"])
 
-                # Content needed for string extraction
                 content_needed = True
-            else:
-                # PE file parser needed for all extractor, except the string one
+            elif ExtractionCore._check_extractor_type(
+                    extractor, extractors.StaticPECharacteristics()):
                 pe_file_needed = True
-                if not ExtractionCore._check_extractor_type(
-                        extractor, extractors.StaticPECharacteristics()):
-                    # Emulator and disassembler needed for extractors based on
-                    # dynamic analysis
-                    emulator_needed = True
-                    disassembler_needed = True
-                else:
-                    pe_characteristics_present = True
+                pe_characteristics_present = True
+            elif ExtractionCore._check_extractor_type(
+                    extractor, extractors.StaticOpcodes()):
+                decompiler_needed = True
+            elif ExtractionCore._check_extractor_type(extractor,
+                                                      extractors.StaticAPIs()):
+                apis_present = True
+                decompiler_needed = True
+            elif ExtractionCore._check_extractor_type(
+                    extractor, extractors.DynamicOpcodes()):
+                pe_file_needed = True
+                emulator_needed = True
+                disassembler_needed = True
+            elif ExtractionCore._check_extractor_type(
+                    extractor, extractors.DynamicAPIs()):
+                apis_present = True
+                pe_file_needed = True
+                emulator_needed = True
+                disassembler_needed = True
 
-                # Initialize the extractor for API calls
-                if ExtractionCore._check_extractor_type(
-                        extractor, extractors.DynamicAPIs()):
-                    extractor.set_configuration(
-                        self._configuration["apis"]["ignored_prefixes"],
-                        self._configuration["apis"]["ignored_suffixes"])
+            # If needed, set the configuration for APIs
+            if apis_present:
+                extractor.set_configuration(
+                    self._configuration["apis"]["ignored_prefixes"],
+                    self._configuration["apis"]["ignored_suffixes"])
 
         # Initialize needed elements
         if content_needed or emulator_needed:
@@ -165,6 +185,10 @@ class ExtractionCore(object, metaclass=Singleton):
                 self._dynamic_bucket.emulator.run()
             except:
                 pass
+        if decompiler_needed:
+            result = GhidraWrapper.analyse_file(filename, True, True)
+            self._static_bucket.opcodes = result[0]
+            self._static_bucket.apis = result[1]
 
         # Apply each extractor
         for extractor in self._extractors:

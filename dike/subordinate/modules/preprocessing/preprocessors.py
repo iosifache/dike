@@ -252,20 +252,15 @@ class GroupCounter(Preprocessor):
         """Same as the corresponding method of the parent class"""
         return self
 
-    def transform(self, X: np.array, y: np.array = None) -> typing.List[int]:
-        """Same as the corresponding method of the parent class
-
-        Returns:
-            typing.List[int]: List of occurances for each category
-        """
-        X = [elem.lower() for elem in X]
+    def _transform_each(self,
+                        X: np.array,
+                        y: np.array = None) -> typing.List[int]:
         counter = collections.Counter(X)
         frequency_dict = {}
         valid_elements = 0
         for category in self.categories:
             group_count = 0
             for label in self.categories[category]:
-
                 if "*" in label:
                     # If the label has wild chars, then search all elements that
                     # matches the given pattern and add their occurrences
@@ -291,6 +286,14 @@ class GroupCounter(Preprocessor):
             self._print_list_of_outliers(X, counter)
 
         return list(frequency_dict.values())
+
+    def transform(self, X: np.array, y: np.array = None) -> typing.List[int]:
+        """Same as the corresponding method of the parent class
+
+        Returns:
+            typing.List[int]: List of occurances for each category
+        """
+        return [self._transform_each(x, y) for x in X]
 
 
 class SameLengthImputer(Preprocessor):
