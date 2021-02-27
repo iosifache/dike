@@ -5,8 +5,9 @@ import typing
 
 import modules.features_extraction.carriers as carriers
 from configuration.dike import DikeConfig
+from modules.dataset_building.types import AnalyzedFileTypes
+from modules.features_extraction.types import FeatureTypes
 from modules.preprocessing.types import PreprocessorsTypes
-from modules.types import AnalyzedFileTypes, FeatureTypes
 from olefile import OleFileIO
 from oletools.oleid import OleID
 from oletools.olevba import VBA_Parser

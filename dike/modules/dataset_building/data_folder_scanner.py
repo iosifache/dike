@@ -6,11 +6,11 @@ import pandas
 import tqdm
 from configuration.dike import DikeConfig
 from Crypto.Hash import SHA256
+from modules.dataset_building.types import AnalyzedFileTypes
 from modules.dataset_building.vt_scanner import VirusTotalScanner
 from modules.preprocessing.preprocessors import GroupCounter
 from modules.utils.logger import LoggedMessageType, Logger
 from sklearn import preprocessing
-from subordinate.modules import AnalyzedFileTypes
 
 
 class DataFolderScanner:

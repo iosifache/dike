@@ -75,6 +75,9 @@ class DikeConfig:
     SAMPLING_STEPS_FOR_HISTOGRAM = 100
     JSON_FILES_INDENT_SPACES = 4
 
+    ## For models retraining
+    RETRAIN_FOLDER_PREFIX = "_retrain"
+
     ## Qiling
     QILING_LOG_EXTENSION = "qlog"
 
@@ -98,7 +101,9 @@ class DikeConfig:
         """
         DATASET = "dataset"
         DATASET_FILENAME_ = "filename"
-        MODEL_OBJECTIVE = "model_objective"
+        MODEL_DETAILS = "model_details"
+        MODEL_DETAILS_OBJECTIVE_ = "objective"
+        MODEL_DETAILS_RETRAINING_ = "retraining_needed"
         EXTRACTORS_PREPROCESSORS = "extractors_preprocessors"
         DIMENSIONALITY_REDUCTION = "dimensionality_reduction"
         DIMENSIONALITY_REDUCTION_ALGORITHM_ = "algorithm"

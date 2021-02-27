@@ -11,6 +11,7 @@ import pandas
 import yaml
 from configuration.dike import DikeConfig
 from Crypto.Hash import SHA256
+from modules.dataset_building.types import AnalyzedFileTypes
 from modules.features_extraction.core import ExtractionCore
 from modules.features_extraction.types import ExtractorsType
 from modules.models_management.evaluation import ModelsEvaluator
@@ -19,7 +20,6 @@ from modules.models_management.types import (ModelObjective,
                                              RegressionAlgorithms)
 from modules.preprocessing.core import PreprocessingCore
 from modules.preprocessing.types import PreprocessorsTypes
-from modules.types import AnalyzedFileTypes
 from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 from modules.utils.logger import LoggedMessageType, Logger
 from sklearn.base import BaseEstimator
@@ -37,7 +37,7 @@ class ModelsManagementCore:
     """Class managing the process of model training and exploitation
     (for prediction)"""
     _is_ready: bool = False
-    _is_loaded: bool = False
+    _is_unchanged: bool = False
     _configuration_filename: str = None
     _dataset_filename: str = None
     _files_extension: AnalyzedFileTypes = None
@@ -81,6 +81,10 @@ class ModelsManagementCore:
                     LoggedMessageType.FAIL)
                 return False
 
+        # Generate an unique name for the model to be used to dump it
+        self._model_unique_name = self._generate_unique_model_name(
+            self._configuration_filename)
+
         # Check if the dataset file exists
         dataset_config = configuration[
             DikeConfig.MandatoryConfigurationKeys.DATASET.value]
@@ -93,14 +97,27 @@ class ModelsManagementCore:
                        LoggedMessageType.FAIL)
 
         # Check if model objective is valid
+        model_details_config = configuration[
+            DikeConfig.MandatoryConfigurationKeys.MODEL_DETAILS.value]
         try:
-            self._model_objective = ModelObjective[configuration[
-                DikeConfig.MandatoryConfigurationKeys.MODEL_OBJECTIVE.value]]
+            self._model_objective = ModelObjective[
+                model_details_config[DikeConfig.MandatoryConfigurationKeys.
+                                     MODEL_DETAILS_OBJECTIVE_.value]]
         except:
             Logger.log(
                 "Invalid model objective specified in the model configuration file",
                 LoggedMessageType.FAIL)
             return False
+
+        # Check if the model needs to be retrained
+        if (DikeConfig.MandatoryConfigurationKeys.MODEL_DETAILS_RETRAINING_
+                in model_details_config
+                and model_details_config[DikeConfig.MandatoryConfigurationKeys.
+                                         MODEL_DETAILS_RETRAINING_]):
+            # pylint: disable=import-outside-toplevel
+            from modules.models_management.retrain import Retrainer
+
+            Retrainer().retrain_model(self._model_unique_name)
 
         # Check if the dimensionality reduction algorithm and parameters are
         # valid
@@ -223,18 +240,7 @@ class ModelsManagementCore:
         # Set the core as loaded
         self._is_ready = True
 
-    def train_model(self, configuration_filename: str) -> None:
-        """Trains a new model following the configuration from a file.
-
-        Args:
-            configuration_filename (str): Name of the configuration file
-        """
-        # Save the configuration filename
-        self._configuration_filename = configuration_filename
-
-        # Initialize components
-        self._load_models_components(configuration_filename)
-
+    def _base_train(self) -> None:
         # Attach the preprocessors
         for extractor, corresponding_preprocessors in zip(
                 self._extractors_types, self._preprocessors_types):
@@ -248,15 +254,15 @@ class ModelsManagementCore:
         for entry_id, entry in self._dataset.iterrows():
             if (self._files_extension is None):
                 self._files_extension = AnalyzedFileTypes.map_id_to_type(
-                    entry["type"]).EXTENSION
+                    entry["type"]).value.EXTENSION
 
             # Get the malware full path
             if (entry["malice"] == 0):
                 parent_folder = DikeConfig.BENIGN_DATASET_FOLDER
             else:
                 parent_folder = DikeConfig.MALWARE_DATASET_FOLDER
-            full_filename = os.path.join(parent_folder,
-                                         entry["hash"] + self._files_extension)
+            full_filename = os.path.join(
+                parent_folder, entry["hash"] + "." + self._files_extension)
 
             # Scan the file
             try:
@@ -334,13 +340,30 @@ class ModelsManagementCore:
                 ModelsEvaluator.evaluate_soft_multilabel_classification(
                     y_test, y_pred, labels)
 
-        # Generate an unique name for the model to be used to dump it
-        self._model_unique_name = self._generate_unique_model_name(
-            self._configuration_filename)
+        self._is_unchanged = False
 
         Logger.log(
             "Successfully trained model {}".format(self._model_unique_name),
             LoggedMessageType.SUCCESS)
+
+    def train(self, configuration_filename):
+        """Trains a new model following the configuration from a file.
+
+        Args:
+            configuration_filename (str): Name of the configuration file
+        """
+        # Save the configuration filename
+        self._configuration_filename = configuration_filename
+
+        # Initialize components
+        self._load_models_components(configuration_filename)
+
+        # Train
+        self._base_train()
+
+    def retrain(self):
+        """Retrains the already loaded model."""
+        self._base_train()
 
     def predict(self,
                 filename: str,
@@ -420,12 +443,18 @@ class ModelsManagementCore:
             str: Unique name of the model
         """
         # Check if the model is a loaded one
-        if self._is_loaded:
+        if self._is_unchanged:
             return self._model_unique_name
 
         # Create the folder structure
         model_dump_folder = os.path.join(DikeConfig.TRAINED_MODELS_FOLDER,
                                          self._model_unique_name)
+        if os.path.isdir(model_dump_folder):
+            is_retraining = True
+            original_model_dump_folder = model_dump_folder
+            model_dump_folder += DikeConfig.RETRAIN_FOLDER_PREFIX
+        else:
+            is_retraining = False
         os.mkdir(model_dump_folder)
         preprocessors_models_dump_folder = \
             DikeConfig.TRAINED_MODEL_PREPROCESSORS_FOLDER.format(\
@@ -489,6 +518,11 @@ class ModelsManagementCore:
                       prediction_configuration_output_file,
                       indent=DikeConfig.JSON_FILES_INDENT_SPACES)
 
+        # Remove the old folder and rename the current one
+        if is_retraining:
+            os.rmdir(original_model_dump_folder)
+            os.rename(model_dump_folder, original_model_dump_folder)
+
         # Log success
         Logger.log(
             "Successfully dumped model {}".format(self._model_unique_name),
@@ -535,7 +569,7 @@ class ModelsManagementCore:
         self._reduced_features = reduced_features_df.values
 
         # Mark the model as loaded
-        self._is_loaded = True
+        self._is_unchanged = True
 
         # Log success
         Logger.log("Successfully loaded model {}".format(model_name),

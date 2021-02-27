@@ -3,7 +3,7 @@ import typing
 
 import pandas
 from configuration.dike import DikeConfig
-from modules.types import AnalyzedFileTypes
+from modules.dataset_building.types import AnalyzedFileTypes
 from modules.utils.logger import LoggedMessageType, Logger
 
 
