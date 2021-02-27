@@ -5,7 +5,6 @@ import numpy as np
 import pandas
 import scipy
 from configuration.dike import DikeConfig
-from sklearn.preprocessing import Binarizer, KBinsDiscretizer, MinMaxScaler
 from modules.features_extraction.types import ExtractorsType
 from modules.preprocessing.preprocessors import (Counter, CountVectorizer,
                                                  GroupCounter, Identity,
@@ -13,6 +12,7 @@ from modules.preprocessing.preprocessors import (Counter, CountVectorizer,
                                                  SameLengthImputer)
 from modules.preprocessing.types import PreprocessorsTypes
 from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
+from sklearn.preprocessing import Binarizer, KBinsDiscretizer, MinMaxScaler
 
 
 class PreprocessingCore:

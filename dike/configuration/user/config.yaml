@@ -57,6 +57,9 @@ machine_learning:
     default_min_thresholds:
         malice: 0.5
         class_membership: 0.2
+    retraining:
+        stringified_time: "00:00"
+        workers_count: 4
 
 database:
     hostname: localhost

@@ -9,11 +9,10 @@ import typing
 from enum import Enum
 
 import numpy as np
-import pandas
+from modules.utils.logger import LoggedMessageType, Logger
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.feature_extraction.text import \
     CountVectorizer as StandardCountVectorizer
-from modules.utils.logger import LoggedMessageType, Logger
 
 
 class Preprocessor(BaseEstimator, TransformerMixin, abc.ABC):
@@ -252,6 +251,7 @@ class GroupCounter(Preprocessor):
         """Same as the corresponding method of the parent class"""
         return self
 
+    # pylint: disable=unused-argument
     def _transform_each(self,
                         X: np.array,
                         y: np.array = None) -> typing.List[int]:

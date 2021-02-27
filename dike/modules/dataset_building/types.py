@@ -5,12 +5,12 @@ from enum import Enum
 
 class AnalyzedFileTypes(Enum):
     """Enumeration for all possible types of an analyzed file"""
-    class PE(Enum):
+    class PE:
         """Enumeration containing details about PE files"""
         ID = 0
         EXTENSION = "exe"
 
-    class OLE(Enum):
+    class OLE:
         """Enumeration containing details about OLE files"""
         ID = 1
         EXTENSION = "ole"
@@ -58,7 +58,7 @@ class AnalyzedFileTypes(Enum):
                                extension, None
         """
         for child in AnalyzedFileTypes:
-            if (child.ID == type_id):
+            if (child.value.ID == type_id):
                 return child
 
         return None

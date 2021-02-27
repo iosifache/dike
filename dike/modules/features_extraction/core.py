@@ -4,17 +4,17 @@ import os
 import typing
 
 import capstone
+import modules.features_extraction.carriers as carriers
+import modules.features_extraction.extractors as extractors
 import pefile
 import qiling
 import qiling.const
-import modules.features_extraction.carriers as carriers
-import modules.features_extraction.extractors as extractors
 from configuration.dike import DikeConfig
-from pypattyrn.creational.singleton import Singleton
-from modules.features_extraction.ghidra_wrapper import \
-    GhidraWrapper
-from modules.types import AnalyzedFileTypes, ExtractorsType
+from modules.dataset_building.types import AnalyzedFileTypes
+from modules.features_extraction.ghidra_wrapper import GhidraWrapper
+from modules.features_extraction.types import ExtractorsType
 from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
+from pypattyrn.creational.singleton import Singleton
 
 
 class ExtractionCore(object, metaclass=Singleton):
