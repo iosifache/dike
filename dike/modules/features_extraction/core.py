@@ -7,14 +7,14 @@ import capstone
 import pefile
 import qiling
 import qiling.const
-import subordinate.modules.features_extraction.carriers as carriers
-import subordinate.modules.features_extraction.extractors as extractors
+import modules.features_extraction.carriers as carriers
+import modules.features_extraction.extractors as extractors
 from configuration.dike import DikeConfig
 from pypattyrn.creational.singleton import Singleton
-from subordinate.modules.features_extraction.ghidra_wrapper import \
+from modules.features_extraction.ghidra_wrapper import \
     GhidraWrapper
-from subordinate.modules.features_extraction.types import ExtractorsType
-from utils.configuration import ConfigurationSpace, ConfigurationWorker
+from modules.types import AnalyzedFileTypes, ExtractorsType
+from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 
 
 class ExtractionCore(object, metaclass=Singleton):
@@ -23,6 +23,8 @@ class ExtractionCore(object, metaclass=Singleton):
     _configuration: typing.Any = None
     _static_bucket: carriers.StaticBucket = None
     _dynamic_bucket: carriers.DynamicBucket = None
+    _document_bucket: carriers.DocumentBucket = None
+    _analyzed_file_types: typing.Set[AnalyzedFileTypes] = {}
     _extractors: typing.List[extractors.Extractor] = []
 
     def __init__(self) -> None:
@@ -51,7 +53,12 @@ class ExtractionCore(object, metaclass=Singleton):
             extractor (extractors.Extractor): Extractor instance being attached
         """
         extractor = ExtractionCore.load_extractor_by_name(extractor_type.value)
-        self._extractors.append(extractor())
+        file_types = extractor.get_analyzed_file_types()
+        if not self._extractors:
+            self._analyzed_file_types = file_types
+            self._extractors.append(extractor())
+        if file_types.issubset(self._analyzed_file_types):
+            self._extractors.append(extractor())
 
     @staticmethod
     def _hook_instruction(qiling_instance: qiling.Qiling, address: int,
@@ -83,15 +90,10 @@ class ExtractionCore(object, metaclass=Singleton):
         Returns:
             list: List of extracted features
         """
-        content_needed = False
-        pe_file_needed = False
-        disassembler_needed = False
-        decompiler_needed = False
-        emulator_needed = False
-
         # Create new buckets for data
         self._static_bucket = carriers.StaticBucket()
         self._dynamic_bucket = carriers.DynamicBucket()
+        self._document_bucket = carriers.DocumentBucket()
 
         # Verify what elements are needed and set the configuration for each of
         # them
@@ -190,9 +192,14 @@ class ExtractionCore(object, metaclass=Singleton):
             self._static_bucket.opcodes = result[0]
             self._static_bucket.apis = result[1]
 
+        # Save the filename if it is a document
+        if (AnalyzedFileTypes.OLE in self._analyzed_file_types):
+            self._document_bucket.filename = filename
+
         # Apply each extractor
         for extractor in self._extractors:
-            extractor.extract(self._static_bucket, self._dynamic_bucket)
+            extractor.extract(self._static_bucket, self._dynamic_bucket,
+                              self._document_bucket)
 
         # Remove from strings the imported libraries/functions if an
         # PECharacteristicExtractor was used
@@ -207,7 +214,8 @@ class ExtractionCore(object, metaclass=Singleton):
         extracted_features = []
         for extractor in self._extractors:
             extractor_features = extractor.squeeze(self._static_bucket,
-                                                   self._dynamic_bucket)
+                                                   self._dynamic_bucket,
+                                                   self._document_bucket)
             extracted_features.extend(extractor_features)
 
         return extracted_features

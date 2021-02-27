@@ -4,7 +4,7 @@ from enum import Enum
 
 import yaml
 from pypattyrn.creational.singleton import Singleton
-from utils.logger import LoggedMessageType, Logger
+from modules.utils.logger import LoggedMessageType, Logger
 
 
 class ConfigurationSpace(Enum):

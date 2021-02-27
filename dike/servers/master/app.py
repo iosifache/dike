@@ -6,7 +6,7 @@ import sys
 import emojis
 from riposte import Riposte
 from subordinate_leader import SubordinateLeader
-from utils.configuration import ConfigurationSpace, ConfigurationWorker
+from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 
 # Check if a cold run is needed
 if (len(sys.argv) > 1 and sys.argv[1] == "exit"):

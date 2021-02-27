@@ -5,32 +5,36 @@ class DikeConfig:
     """Class containing the default configuration of the platform
     """
     # Folders
-
-    ## Main
     DIKE_FOLDER = "/home/iosifache/Documents/dike/dike/"
-    SCRIPTS_FOLDER = DIKE_FOLDER + "scripts/"
-    SUBORDINATE_FOLDER = DIKE_FOLDER + "subordinate/"
-    DATA_FOLDER = SUBORDINATE_FOLDER + "data/"
 
-    ## For datasets
+    ## Data
+    DATA_FOLDER = DIKE_FOLDER + "data/"
     DATASETS_FOLDER = DATA_FOLDER + "datasets/"
     CUSTOM_DATASETS_FOLDER = DATASETS_FOLDER + "custom/"
     FULL_DATASET_FOLDER = DATASETS_FOLDER + "full/"
     MALWARE_DATASET_FOLDER = FULL_DATASET_FOLDER + "malware/"
     BENIGN_DATASET_FOLDER = FULL_DATASET_FOLDER + "benign/"
-
-    ## For trained models
     TRAINED_MODELS_FOLDER = DATA_FOLDER + "trained_models/"
     TRAINED_MODEL_PREPROCESSORS_FOLDER = TRAINED_MODELS_FOLDER + \
         "{}/preprocessors/"
 
-    ## Qiling
-    QILING_FOLDER = DATA_FOLDER + "qiling/"
+    # Scripts
+    SCRIPTS_FOLDER = DIKE_FOLDER + "scripts/"
+
+    ## Servers
+    SERVERS_FOLDER = DIKE_FOLDER + "servers/"
+    MASTER_FOLDER = SERVERS_FOLDER + "master/"
+    PREDICTION_FOLDER = SERVERS_FOLDER + "prediction/"
+
+    ### Subordinate server
+    SUBORDINATE_FOLDER = SERVERS_FOLDER + "subordinate/"
+
+    #### Logs
+    LOGS_FOLDER = SUBORDINATE_FOLDER + "logs/"
+    QILING_FOLDER = LOGS_FOLDER + "qiling/"
     QILING_ROOTFS_FOLDER = QILING_FOLDER + "rootfs/"
     QILING_LOGS_FOLDER = QILING_FOLDER + "logs/"
-
-    ## Ghidra
-    GHIDRA_PROJECT_FOLDER = DATA_FOLDER + "ghidra/"
+    GHIDRA_PROJECT_FOLDER = LOGS_FOLDER + "ghidra/"
     GHIDRA_FOLDER = "/home/iosifache/Documents/Programs/ghidra/"
 
     # Files
@@ -55,7 +59,7 @@ class DikeConfig:
     TRAINED_MODEL_PREDICTION_CONFIGURATION = TRAINED_MODELS_FOLDER + \
         "{}/prediction_configuration.json"
 
-    ## Ghidra
+    ## Logs
     GHIDRA_HEADLESS_ANALYZER = GHIDRA_FOLDER + "support/analyzeHeadless"
     GHIDRA_EXTRACTION_SCRIPT = SCRIPTS_FOLDER + "delegate_ghidra.py"
 
@@ -93,6 +97,7 @@ class DikeConfig:
         children of the root ones.
         """
         DATASET = "dataset"
+        DATASET_FILENAME_ = "filename"
         MODEL_OBJECTIVE = "model_objective"
         EXTRACTORS_PREPROCESSORS = "extractors_preprocessors"
         DIMENSIONALITY_REDUCTION = "dimensionality_reduction"

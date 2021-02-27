@@ -6,7 +6,7 @@ import typing
 import rpyc
 import tqdm
 from pypattyrn.creational.singleton import Singleton
-from utils.logger import LoggedMessageType, Logger
+from modules.utils.logger import LoggedMessageType, Logger
 
 
 class _Connection:

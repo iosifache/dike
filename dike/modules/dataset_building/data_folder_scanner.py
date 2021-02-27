@@ -6,10 +6,11 @@ import pandas
 import tqdm
 from configuration.dike import DikeConfig
 from Crypto.Hash import SHA256
+from modules.dataset_building.vt_scanner import VirusTotalScanner
+from modules.preprocessing.preprocessors import GroupCounter
+from modules.utils.logger import LoggedMessageType, Logger
 from sklearn import preprocessing
-from subordinate.modules.dataset_building.vt_scanner import VirusTotalScanner
-from subordinate.modules.preprocessing.preprocessors import GroupCounter
-from utils.logger import LoggedMessageType, Logger
+from subordinate.modules import AnalyzedFileTypes
 
 
 class DataFolderScanner:
@@ -78,6 +79,8 @@ class DataFolderScanner:
         new_malware = 0
 
         for filename in filenames:
+            # Get extension
+            extension = os.path.splitext(filename)[1][1:]
 
             # Get hash of file
             full_path = os.path.join(work_dir, filename)
@@ -86,7 +89,9 @@ class DataFolderScanner:
             file_hash = SHA256.new(data=content).hexdigest()
 
             # Check if the file is named correctly
-            standard_full_name = os.path.join(work_dir, file_hash + ".exe")
+            standard_type = AnalyzedFileTypes.map_extension_to_type(extension)
+            standard_full_name = os.path.join(
+                work_dir, file_hash + standard_type.EXTENSION)
             if (full_path != standard_full_name):
                 os.rename(full_path, standard_full_name)
 
@@ -101,7 +106,7 @@ class DataFolderScanner:
                 next_step_write.write(file_hash + "\n")
             else:
                 next_step_write.write(
-                    file_hash +
+                    standard_type.ID + "," + file_hash +
                     (DikeConfig.MALWARE_CATEGORIES_COUNT + 1) * ",0" + "\n")
 
             # Update the progress
@@ -217,12 +222,20 @@ class DataFolderScanner:
         extractor = GroupCounter(malware_families, True)
         progress_bar = tqdm.tqdm(total=len(vt_data_df))
         for _, entry in vt_data_df.iterrows():
+            # Get the file extension
+            for filename in os.listdir(DikeConfig.MALWARE_DATASET_FOLDER):
+                if filename.startswith(entry["hash"]):
+                    extension = os.path.splitext(filename)[1][1:]
+                    file_type = AnalyzedFileTypes.map_extension_to_type(
+                        extension).ID
+                    break
+
             all_families.extend(entry["raw_tags"].split(" "))
 
             family_votes = extractor.fit_transform(
                 entry["raw_tags"].split(" "))
             new_entry = [
-                entry["hash"],
+                file_type, entry["hash"],
                 DataFolderScanner._get_malice_score(malware_benign_vote_ratio,
                                                     entry["malicious_votes"],
                                                     entry["harmless_votes"]),

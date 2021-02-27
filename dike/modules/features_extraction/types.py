@@ -3,12 +3,13 @@ from enum import Enum
 
 class FeatureTypes(Enum):
     """Enumeration for all possible types of an extracted feature"""
-    INTEGER = 0
-    FLOAT = 1
-    STRING = 2
-    INTEGER_ARRAY = 10
-    FLOAT_ARRAY = 11
-    STRING_ARRAY = 12
+    BOOLEAN = 0
+    INTEGER = 1
+    FLOAT = 2
+    STRING = 3
+    INTEGER_ARRAY = 11
+    FLOAT_ARRAY = 12
+    STRING_ARRAY = 13
 
 
 class ExtractorsType(Enum):
@@ -19,3 +20,5 @@ class ExtractorsType(Enum):
     STATIC_APIS = "StaticAPIs"
     DYNAMIC_OPCODES = "DynamicOpcodes"
     DYNAMIC_APIS = "DynamicAPIs"
+    GENERAL_OLE_DETAILS = "GeneralOLEDetails"
+    OLE_MACROS = "OLEMacros"

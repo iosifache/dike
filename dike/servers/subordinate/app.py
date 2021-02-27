@@ -5,10 +5,10 @@ The scrips uses the user configuration to create a threaded server. This is
 used to wait for and respond to RPC calls from the master.
 """
 
-from rpyc.utils.helpers import classpartial
-from rpyc.utils.server import ThreadPoolServer
+from rpyc.modules.utils.helpers import classpartial
+from rpyc.modules.utils.server import ThreadPoolServer
 from subordinate.services import SubordinateService
-from utils.configuration import ConfigurationSpace, ConfigurationWorker
+from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 
 # Configuration for RPyC's ThreadPoolServer
 CONFIGURATION = {

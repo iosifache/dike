@@ -3,22 +3,38 @@ import collections
 import re
 import typing
 
-import subordinate.modules.features_extraction.carriers as carriers
+import modules.features_extraction.carriers as carriers
 from configuration.dike import DikeConfig
-from subordinate.modules.features_extraction.types import FeatureTypes
-from subordinate.modules.preprocessing.types import PreprocessorsTypes
+from modules.preprocessing.types import PreprocessorsTypes
+from modules.types import AnalyzedFileTypes, FeatureTypes
+from olefile import OleFileIO
+from oletools.oleid import OleID
+from oletools.olevba import VBA_Parser
 
 
 class Extractor(abc.ABC):
     """Class modeling the extractors standard behavior
 
-    The types of the extracted features are indicated in the return value of
-    the method get_feature_types.
+    The types of the supported types of files to extract features from are
+    indicated in the return value of the method get_analyzed_file_types().
+
+    Same for the types of the extracted features, that are indicated in the
+    return value of the method get_feature_types().
 
     If a preprocessing of the features is needed, attach an available
-    preprocessor (of a type returned by the method get_supported_preprocessors).
+    preprocessor (of a type returned by the method
+    get_supported_preprocessors()).
 
     """
+    @abc.abstractstaticmethod
+    def get_analyzed_file_types() -> typing.Set[AnalyzedFileTypes]:
+        """Returns the list of the supported types of files to analyze.
+
+        Returns:
+            typing.List[AnalyzedFileTypes]: List of supported filetypes
+        """
+        return
+
     @abc.abstractstaticmethod
     def get_feature_types() -> typing.List[typing.Tuple[str, FeatureTypes]]:
         """Returns the list with captions and types of the extracted features.
@@ -42,7 +58,8 @@ class Extractor(abc.ABC):
 
     @abc.abstractmethod
     def extract(self, static_bucket: carriers.StaticBucket,
-                dynamic_bucket: carriers.DynamicBucket) -> None:
+                dynamic_bucket: carriers.DynamicBucket,
+                document_bucket: carriers.DocumentBucket) -> None:
         """Populates the given buckets with the features obtained by the
         extractor.
 
@@ -51,13 +68,17 @@ class Extractor(abc.ABC):
                                                     results
             dynamic_bucket (carriers.DynamicBucket): Storage for dynamic
                                                       analysis results
+            document_bucket (carriers.DocumentBucket): Storage for documents
+                                                        analysis results
         """
         return
 
     @abc.abstractmethod
     def squeeze(
             self, static_bucket: carriers.StaticBucket,
-            dynamic_bucket: carriers.DynamicBucket) -> typing.List[typing.Any]:
+            dynamic_bucket: carriers.DynamicBucket,
+            document_bucket: carriers.DocumentBucket
+    ) -> typing.List[typing.Any]:
         """Returns the extracted features.
 
         Args:
@@ -65,6 +86,8 @@ class Extractor(abc.ABC):
                                                     results
             dynamic_bucket (carriers.DynamicBucket): Storage for dynamic
                                                       analysis results
+            document_bucket (carriers.DocumentBucket): Storage for documents
+                                                        analysis results
 
         Returns:
             typing.List[typing.List]: List of the extracted features
@@ -85,6 +108,11 @@ class StaticStrings(Extractor):
     """
     _min_length: int = 1
     _min_occurances: int = 1
+
+    @staticmethod
+    def get_analyzed_file_types() -> typing.Set[AnalyzedFileTypes]:
+        """Same as the corresponding method of the parent class"""
+        return {AnalyzedFileTypes.PE, AnalyzedFileTypes.OLE}
 
     @staticmethod
     def get_feature_types() -> typing.List[typing.Tuple[str, FeatureTypes]]:
@@ -118,7 +146,8 @@ class StaticStrings(Extractor):
         return "".join(chars).encode("utf-8")
 
     def extract(self, static_bucket: carriers.StaticBucket,
-                dynamic_bucket: carriers.DynamicBucket) -> None:
+                dynamic_bucket: carriers.DynamicBucket,
+                document_bucket: carriers.DocumentBucket) -> None:
         """Same as the corresponding method of the parent class"""
         all_strings = static_bucket.content.translate(
             self._get_printable_chars()).split(b'\0')
@@ -137,7 +166,9 @@ class StaticStrings(Extractor):
 
     def squeeze(
             self, static_bucket: carriers.StaticBucket,
-            dynamic_bucket: carriers.DynamicBucket) -> typing.List[typing.Any]:
+            dynamic_bucket: carriers.DynamicBucket,
+            document_bucket: carriers.DocumentBucket
+    ) -> typing.List[typing.Any]:
         """Same as the corresponding method of the parent class"""
         return [static_bucket.strings]
 
@@ -155,6 +186,11 @@ class StaticPECharacteristics(Extractor):
     - sections virtual sizes, and
     - sections sizes of raw data.
     """
+    @staticmethod
+    def get_analyzed_file_types() -> typing.Set[AnalyzedFileTypes]:
+        """Same as the corresponding method of the parent class"""
+        return {AnalyzedFileTypes.PE}
+
     @staticmethod
     def get_feature_types() -> typing.List[FeatureTypes]:
         """Same as the corresponding method of the parent class"""
@@ -183,7 +219,8 @@ class StaticPECharacteristics(Extractor):
         ]
 
     def extract(self, static_bucket: carriers.StaticBucket,
-                dynamic_bucket: carriers.DynamicBucket) -> None:
+                dynamic_bucket: carriers.DynamicBucket,
+                document_bucket: carriers.DocumentBucket) -> None:
         """Same as the corresponding method of the parent class"""
         imported_libraries = []
         imported_functions = []
@@ -222,7 +259,9 @@ class StaticPECharacteristics(Extractor):
 
     def squeeze(
             self, static_bucket: carriers.StaticBucket,
-            dynamic_bucket: carriers.DynamicBucket) -> typing.List[typing.Any]:
+            dynamic_bucket: carriers.DynamicBucket,
+            document_bucket: carriers.DocumentBucket
+    ) -> typing.List[typing.Any]:
         """Same as the corresponding method of the parent class"""
         return [
             static_bucket.size, static_bucket.imported_libraries,
@@ -242,6 +281,11 @@ class _Opcodes(Extractor, abc.ABC):
     - mnemonics of the executed opcodes.
     """
     @staticmethod
+    def get_analyzed_file_types() -> typing.Set[AnalyzedFileTypes]:
+        """Same as the corresponding method of the parent class"""
+        return {AnalyzedFileTypes.PE}
+
+    @staticmethod
     def get_feature_types() -> typing.List[FeatureTypes]:
         """Same as the corresponding method of the parent class"""
         return [("opcodes", FeatureTypes.STRING_ARRAY)]
@@ -256,7 +300,8 @@ class _Opcodes(Extractor, abc.ABC):
         ]]
 
     def extract(self, static_bucket: carriers.StaticBucket,
-                dynamic_bucket: carriers.DynamicBucket) -> None:
+                dynamic_bucket: carriers.DynamicBucket,
+                document_bucket: carriers.DocumentBucket) -> None:
         """Same as the corresponding method of the parent class"""
         return
 
@@ -273,7 +318,9 @@ class StaticOpcodes(_Opcodes):
     """
     def squeeze(
             self, static_bucket: carriers.StaticBucket,
-            dynamic_bucket: carriers.DynamicBucket) -> typing.List[typing.Any]:
+            dynamic_bucket: carriers.DynamicBucket,
+            document_bucket: carriers.DocumentBucket
+    ) -> typing.List[typing.Any]:
         """Same as the corresponding method of the parent class"""
         return [static_bucket.opcodes]
 
@@ -289,7 +336,9 @@ class DynamicOpcodes(_Opcodes):
     """
     def squeeze(
             self, static_bucket: carriers.StaticBucket,
-            dynamic_bucket: carriers.DynamicBucket) -> typing.List[typing.Any]:
+            dynamic_bucket: carriers.DynamicBucket,
+            document_bucket: carriers.DocumentBucket
+    ) -> typing.List[typing.Any]:
         """Same as the corresponding method of the parent class"""
         return [dynamic_bucket.opcodes]
 
@@ -297,12 +346,17 @@ class DynamicOpcodes(_Opcodes):
 # pylint: disable=abstract-method
 class _APIs(Extractor, abc.ABC):
     """Class extracting the called Windows API functions
-    
+
     Extracted features are:
     - Windows API calls.
     """
     _ignored_prefixes: typing.List[str] = []
     _ignored_suffixes: typing.List[str] = []
+
+    @staticmethod
+    def get_analyzed_file_types() -> typing.Set[AnalyzedFileTypes]:
+        """Same as the corresponding method of the parent class"""
+        return {AnalyzedFileTypes.PE}
 
     @staticmethod
     def get_feature_types() -> typing.List[FeatureTypes]:
@@ -362,7 +416,8 @@ class StaticAPIs(_APIs):
     all (possibly) called Windows API functions.
     """
     def extract(self, static_bucket: carriers.StaticBucket,
-                dynamic_bucket: carriers.DynamicBucket) -> None:
+                dynamic_bucket: carriers.DynamicBucket,
+                document_bucket: carriers.DocumentBucket) -> None:
         """Same as the corresponding method of the parent class"""
         # Normalize functions names
         static_bucket.apis = [
@@ -371,7 +426,9 @@ class StaticAPIs(_APIs):
 
     def squeeze(
             self, static_bucket: carriers.StaticBucket,
-            dynamic_bucket: carriers.DynamicBucket) -> typing.List[typing.Any]:
+            dynamic_bucket: carriers.DynamicBucket,
+            document_bucket: carriers.DocumentBucket
+    ) -> typing.List[typing.Any]:
         """Same as the corresponding method of the parent class"""
         return [static_bucket.apis]
 
@@ -388,7 +445,8 @@ class DynamicAPIs(_APIs):
     the parent class _APIs.
     """
     def extract(self, static_bucket: carriers.StaticBucket,
-                dynamic_bucket: carriers.DynamicBucket) -> None:
+                dynamic_bucket: carriers.DynamicBucket,
+                document_bucket: carriers.DocumentBucket) -> None:
         """Same as the corresponding method of the parent class"""
         # Get the API calls if these are not already set
         if not dynamic_bucket.apis:
@@ -402,6 +460,195 @@ class DynamicAPIs(_APIs):
 
     def squeeze(
             self, static_bucket: carriers.StaticBucket,
-            dynamic_bucket: carriers.DynamicBucket) -> typing.List[typing.Any]:
+            dynamic_bucket: carriers.DynamicBucket,
+            document_bucket: carriers.DocumentBucket
+    ) -> typing.List[typing.Any]:
         """Same as the corresponding method of the parent class"""
         return [dynamic_bucket.apis]
+
+
+class GeneralOLEDetails(Extractor):
+    """Class extracting general details from an OLE file"""
+    @staticmethod
+    def get_analyzed_file_types() -> typing.Set[AnalyzedFileTypes]:
+        """Same as the corresponding method of the parent class"""
+        return {AnalyzedFileTypes.OLE}
+
+    @staticmethod
+    def get_feature_types() -> typing.List[FeatureTypes]:
+        """Same as the corresponding method of the parent class"""
+        return [("text found in the header of the document",
+                 FeatureTypes.STRING_ARRAY),
+                ("document edit time", FeatureTypes.INTEGER),
+                ("number of pages", FeatureTypes.INTEGER),
+                ("number of words", FeatureTypes.INTEGER),
+                ("number of characters", FeatureTypes.INTEGER),
+                ("security level", FeatureTypes.INTEGER),
+                ("time of creation", FeatureTypes.INTEGER),
+                ("time of the last modification", FeatureTypes.INTEGER),
+                ("boolean indicating if the SummaryInformation stream exists",
+                 FeatureTypes.BOOLEAN),
+                ("boolean indicating if the document is encryped",
+                 FeatureTypes.BOOLEAN),
+                ("boolean indicating if the document is a Word",
+                 FeatureTypes.BOOLEAN),
+                ("boolean indicating if the document is an Excel",
+                 FeatureTypes.BOOLEAN),
+                ("boolean indicating if the document is a Powerpoint",
+                 FeatureTypes.BOOLEAN),
+                ("boolean indicating if the document is a Visio",
+                 FeatureTypes.BOOLEAN),
+                ("boolean indicating if the ObjectPool stream exists",
+                 FeatureTypes.BOOLEAN),
+                ("number of Flash objects", FeatureTypes.INTEGER),
+                ("names of directory entries", FeatureTypes.STRING_ARRAY),
+                ("sizes of directory entries", FeatureTypes.INTEGER_ARRAY),
+                ("number of sectors", FeatureTypes.INTEGER)]
+
+    @staticmethod
+    def get_supported_preprocessors(
+    ) -> typing.List[typing.List[PreprocessorsTypes]]:
+        """Same as the corresponding method of the parent class"""
+        return [[PreprocessorsTypes.N_GRAMS], [PreprocessorsTypes.IDENTITY],
+                [PreprocessorsTypes.IDENTITY], [PreprocessorsTypes.IDENTITY],
+                [PreprocessorsTypes.IDENTITY], [PreprocessorsTypes.IDENTITY],
+                [PreprocessorsTypes.IDENTITY], [PreprocessorsTypes.IDENTITY],
+                [PreprocessorsTypes.IDENTITY], [PreprocessorsTypes.IDENTITY],
+                [PreprocessorsTypes.IDENTITY], [PreprocessorsTypes.IDENTITY],
+                [PreprocessorsTypes.IDENTITY], [PreprocessorsTypes.IDENTITY],
+                [PreprocessorsTypes.IDENTITY], [PreprocessorsTypes.IDENTITY],
+                [
+                    PreprocessorsTypes.COUNT_VECTORIZER,
+                    PreprocessorsTypes.N_GRAMS
+                ], [PreprocessorsTypes.K_BINS_DISCRETIZER]]
+
+    def extract(self, static_bucket: carriers.StaticBucket,
+                dynamic_bucket: carriers.DynamicBucket,
+                document_bucket: carriers.DocumentBucket) -> None:
+        """Same as the corresponding method of the parent class"""
+        ole = OleFileIO(document_bucket.filename)
+
+        # Metadatas
+        meta = ole.get_metadata()
+        for property_name in meta.SUMMARY_ATTRIBS:
+            property_value = getattr(meta, property_name)
+
+            if (property_name in [
+                    "title", "subject", "author", "keywords", "comments",
+                    "last_saved_by"
+            ]):
+                document_bucket.header_text.append(
+                    property_value.decode("utf-8"))
+            elif (property_name == "total_edit_time"):
+                document_bucket.total_edit_time = property_value
+            elif (property_name == "num_pages"):
+                document_bucket.pages_count = property_value
+            elif (property_name == "num_words"):
+                document_bucket.words_count = property_value
+            elif (property_name == "num_chars"):
+                document_bucket.words_count = property_value
+            elif (property_name == "security"):
+                document_bucket.security = property_value
+
+        # Timestamps
+        creation_time = ole.root.getctime()
+        modification_time = ole.root.getmtime()
+        if creation_time:
+            document_bucket.creation_time = int(
+                creation_time.strftime("%Y%m%d%H%M%S"))
+        if modification_time:
+            document_bucket.modification_time = int(
+                modification_time.strftime("%Y%m%d%H%M%S"))
+
+        # Special characteristics
+        oid = OleID(document_bucket.filename)
+        indicators = oid.check()
+        for indicator in indicators:
+            indicator_id = indicator.id
+            indicator_value = indicator.value
+
+            if (indicator_id == "has_suminfo"):
+                document_bucket.has_suminfo = indicator_value
+            elif (indicator_id == "encrypted"):
+                document_bucket.is_encrypted = indicator_value
+            elif (indicator_id == "word"):
+                document_bucket.is_word = indicator_value
+            elif (indicator_id == "excel"):
+                document_bucket.is_excel = indicator_value
+            elif (indicator_id == "ppt"):
+                document_bucket.is_ppt = indicator_value
+            elif (indicator_id == "visio"):
+                document_bucket.is_visio = indicator_value
+            elif (indicator_id == "ObjectPool"):
+                document_bucket.has_object_pool = indicator_value
+            elif (indicator_id == "flash"):
+                document_bucket.flash_count = indicator_value
+
+        # Directory entries
+        for entry in ole.direntries:
+            if entry:
+                document_bucket.directory_entries.append(
+                    carriers.DirectoryEntry(entry.name, entry.size))
+
+        # Sectors
+        document_bucket.sectors_count = len(ole.fat)
+
+    def squeeze(
+            self, static_bucket: carriers.StaticBucket,
+            dynamic_bucket: carriers.DynamicBucket,
+            document_bucket: carriers.DocumentBucket
+    ) -> typing.List[typing.Any]:
+        """Same as the corresponding method of the parent class"""
+        return [
+            document_bucket.header_text, document_bucket.total_edit_time,
+            document_bucket.pages_count, document_bucket.words_count,
+            document_bucket.chars_count, document_bucket.security,
+            document_bucket.creation_time, document_bucket.modification_time,
+            document_bucket.has_suminfo, document_bucket.is_encrypted,
+            document_bucket.is_word, document_bucket.is_excel,
+            document_bucket.is_ppt, document_bucket.is_visio,
+            document_bucket.has_object_pool, document_bucket.flash_count,
+            [entry["name"] for entry in document_bucket.directory_entries],
+            [entry["size"] for entry in document_bucket.directory_entries
+             ], document_bucket.sectors_count
+        ]
+
+
+class OLEMacros(Extractor):
+    """Class extracting general details from an OLE file"""
+    @staticmethod
+    def get_analyzed_file_types() -> typing.Set[AnalyzedFileTypes]:
+        """Same as the corresponding method of the parent class"""
+        return {AnalyzedFileTypes.OLE}
+
+    @staticmethod
+    def get_feature_types() -> typing.List[FeatureTypes]:
+        """Same as the corresponding method of the parent class"""
+        return [("code of all macros", FeatureTypes.STRING_ARRAY)]
+
+    @staticmethod
+    def get_supported_preprocessors(
+    ) -> typing.List[typing.List[PreprocessorsTypes]]:
+        """Same as the corresponding method of the parent class"""
+        return [[
+            PreprocessorsTypes.COUNTER, PreprocessorsTypes.COUNT_VECTORIZER,
+            PreprocessorsTypes.N_GRAMS
+        ]]
+
+    def extract(self, static_bucket: carriers.StaticBucket,
+                dynamic_bucket: carriers.DynamicBucket,
+                document_bucket: carriers.DocumentBucket) -> None:
+        """Same as the corresponding method of the parent class"""
+        vbaparser = VBA_Parser(document_bucket.filename)
+
+        if vbaparser.detect_vba_macros():
+            for (_, _, _, vba_code) in vbaparser.extract_macros():
+                document_bucket.macros_code.append(vba_code)
+
+    def squeeze(
+            self, static_bucket: carriers.StaticBucket,
+            dynamic_bucket: carriers.DynamicBucket,
+            document_bucket: carriers.DocumentBucket
+    ) -> typing.List[typing.Any]:
+        """Same as the corresponding method of the parent class"""
+        return [document_bucket.macros_code]

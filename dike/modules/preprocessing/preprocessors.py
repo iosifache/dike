@@ -13,7 +13,7 @@ import pandas
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.feature_extraction.text import \
     CountVectorizer as StandardCountVectorizer
-from utils.logger import LoggedMessageType, Logger
+from modules.utils.logger import LoggedMessageType, Logger
 
 
 class Preprocessor(BaseEstimator, TransformerMixin, abc.ABC):

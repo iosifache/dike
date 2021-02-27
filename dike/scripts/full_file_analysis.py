@@ -17,10 +17,10 @@ used for file analysis. These letters can be:
 import os
 import sys
 
-import subordinate.modules.features_extraction.core as extraction_core
-from subordinate.modules.features_extraction.types import ExtractorsType
-from utils.configuration import ConfigurationSpace, ConfigurationWorker
-from utils.logger import LoggedMessageType, Logger
+import modules.features_extraction.core as extraction_core
+from modules.features_extraction.types import ExtractorsType
+from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
+from modules.utils.logger import LoggedMessageType, Logger
 
 
 def _check_extractors_string(string: str) -> bool:

@@ -1,32 +1,32 @@
 # Project-specific
 
 ## Datasets
-dike/subordinate/data/datasets/custom/*
-!dike/subordinate/data/datasets/custom/.gitkeep
-dike/subordinate/data/datasets/full/*
-!dike/subordinate/data/datasets/full/benign
-!dike/subordinate/data/datasets/full/malware
-dike/subordinate/data/datasets/full/benign/*
-dike/subordinate/data/datasets/full/malware/*
-!dike/subordinate/data/datasets/full/benign/.gitkeep
-!dike/subordinate/data/datasets/full/malware/.gitkeep
+dike/data/datasets/custom/*
+!dike/data/datasets/custom/.gitkeep
+dike/data/datasets/full/*
+!dike/data/datasets/full/benign
+!dike/data/datasets/full/malware
+dike/data/datasets/full/benign/*
+dike/data/datasets/full/malware/*
+!dike/data/datasets/full/benign/.gitkeep
+!dike/data/datasets/full/malware/.gitkeep
 
 ## Trained models
-dike/subordinate/data/trained_models/*
-!dike/subordinate/data/trained_models/.gitkeep
+dike/data/trained_models/*
+!dike/data/trained_models/.gitkeep
 
 ## Secrets
 dike/configuration/user/secrets.yaml
 
 ## Gidra Project
-dike/subordinate/data/ghidra/*
-!dike/subordinate/data/ghidra/.gitkeep
+dike/servers/subordinate/logs/ghidra/*
+!dike/servers/subordinate/logs/ghidra/.gitkeep
 
 ## Logs
-dike/subordinate/data/qiling/logs/*
-!dike/subordinate/data/qiling/logs/.gitkeep
-dike/subordinate/data/qiling/rootfs/*
-!dike/subordinate/data/qiling/rootfs/.gitkeep
+dike/servers/subordinate/logs/qiling/logs/*
+!dike/servers/subordinate/logs/qiling/logs/.gitkeep
+dike/servers/subordinate/logs/qiling/rootfs/*
+!dike/servers/subordinate/logs/qiling/rootfs/.gitkeep
 
 ## Notes
 NOTES.md
