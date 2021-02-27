@@ -11,6 +11,17 @@ import pandas
 import yaml
 from configuration.dike import DikeConfig
 from Crypto.Hash import SHA256
+from modules.features_extraction.core import ExtractionCore
+from modules.features_extraction.types import ExtractorsType
+from modules.models_management.evaluation import ModelsEvaluator
+from modules.models_management.types import (ModelObjective,
+                                             ReductionAlgorithm,
+                                             RegressionAlgorithms)
+from modules.preprocessing.core import PreprocessingCore
+from modules.preprocessing.types import PreprocessorsTypes
+from modules.types import AnalyzedFileTypes
+from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
+from modules.utils.logger import LoggedMessageType, Logger
 from sklearn.base import BaseEstimator
 from sklearn.decomposition import NMF, PCA, FastICA
 from sklearn.ensemble import RandomForestRegressor
@@ -20,16 +31,6 @@ from sklearn.multioutput import MultiOutputRegressor
 from sklearn.preprocessing import normalize
 from sklearn.svm import LinearSVC
 from sklearn.tree import DecisionTreeRegressor
-from subordinate.modules.features_extraction.core import ExtractionCore
-from subordinate.modules.features_extraction.types import ExtractorsType
-from subordinate.modules.models_management.evaluation import ModelsEvaluator
-from subordinate.modules.models_management.types import (ModelObjective,
-                                                         ReductionAlgorithm,
-                                                         RegressionAlgorithms)
-from subordinate.modules.preprocessing.core import PreprocessingCore
-from subordinate.modules.preprocessing.types import PreprocessorsTypes
-from utils.configuration import ConfigurationSpace, ConfigurationWorker
-from utils.logger import LoggedMessageType, Logger
 
 
 class ModelsManagementCore:
@@ -39,6 +40,7 @@ class ModelsManagementCore:
     _is_loaded: bool = False
     _configuration_filename: str = None
     _dataset_filename: str = None
+    _files_extension: AnalyzedFileTypes = None
     _extractors_types: typing.List[ExtractorsType] = []
     _preprocessors_types: typing.List[typing.List[PreprocessorsTypes]] = []
     _model_objective: ModelObjective = None
@@ -80,8 +82,10 @@ class ModelsManagementCore:
                 return False
 
         # Check if the dataset file exists
-        self._dataset_filename = configuration[
+        dataset_config = configuration[
             DikeConfig.MandatoryConfigurationKeys.DATASET.value]
+        self._dataset_filename = dataset_config[
+            DikeConfig.MandatoryConfigurationKeys.DATASET_FILENAME_.value]
         self._dataset_filename = os.path.join(
             DikeConfig.CUSTOM_DATASETS_FOLDER, self._dataset_filename)
         if (not os.path.isfile(self._dataset_filename)):
@@ -242,12 +246,17 @@ class ModelsManagementCore:
         raw_features = []
         extraction_errors_indexes = []
         for entry_id, entry in self._dataset.iterrows():
+            if (self._files_extension is None):
+                self._files_extension = AnalyzedFileTypes.map_id_to_type(
+                    entry["type"]).EXTENSION
+
             # Get the malware full path
             if (entry["malice"] == 0):
                 parent_folder = DikeConfig.BENIGN_DATASET_FOLDER
             else:
                 parent_folder = DikeConfig.MALWARE_DATASET_FOLDER
-            full_filename = os.path.join(parent_folder, entry["hash"] + ".exe")
+            full_filename = os.path.join(parent_folder,
+                                         entry["hash"] + self._files_extension)
 
             # Scan the file
             try:
@@ -279,7 +288,7 @@ class ModelsManagementCore:
                     if index not in extraction_errors_indexes
                 ]
         elif (self._model_objective == ModelObjective.CLASSIFICATION):
-            y = self._dataset.iloc[:, range(2, len(self._dataset.columns))]
+            y = self._dataset.iloc[:, range(3, len(self._dataset.columns))]
             if extraction_errors_indexes:
                 y = y.drop(extraction_errors_indexes)
             y = y.values
@@ -320,7 +329,7 @@ class ModelsManagementCore:
             self._evaluation_results = ModelsEvaluator.evaluate_regression(
                 y_test, y_pred)
         elif (self._model_objective == ModelObjective.CLASSIFICATION):
-            labels = list(self._dataset.columns)[2:]
+            labels = list(self._dataset.columns)[3:]
             self._evaluation_results = \
                 ModelsEvaluator.evaluate_soft_multilabel_classification(
                     y_test, y_pred, labels)
@@ -392,7 +401,7 @@ class ModelsManagementCore:
         if (self._model_objective == ModelObjective.MALICE):
             returned_result["malice"] = result[0]
         elif (self._model_objective == ModelObjective.CLASSIFICATION):
-            labels = list(self._dataset.columns)[2:]
+            labels = list(self._dataset.columns)[3:]
             normalized_memberships = normalize([result[0]], "l1")[0]
             returned_result["membership"] = dict(
                 zip(labels, normalized_memberships))

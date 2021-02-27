@@ -3,10 +3,9 @@ import typing
 from threading import Lock
 
 import rpyc
-from subordinate.modules.dataset_building.data_folder_scanner import \
-    DataFolderScanner
-from subordinate.modules.dataset_building.dataset_worker import DatasetWorker
-from utils.logger import LoggedMessageType, Logger
+from modules.dataset_building.data_folder_scanner import DataFolderScanner
+from modules.dataset_building.dataset_worker import DatasetWorker
+from modules.utils.logger import LoggedMessageType, Logger
 
 
 class SubordinateService(rpyc.Service):

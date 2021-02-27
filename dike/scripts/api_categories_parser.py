@@ -12,10 +12,10 @@ report-parser.
 import os
 import sys
 
-import subordinate.modules.features_extraction.extractors as extractors
+import modules.features_extraction.extractors as extractors
 import yaml
-from utils.configuration import ConfigurationSpace, ConfigurationWorker
-from utils.logger import LoggedMessageType, Logger
+from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
+from modules.utils.logger import LoggedMessageType, Logger
 
 # Constants
 OUTPUT_FILE = "../configuration/api_categories_normalized.yaml"

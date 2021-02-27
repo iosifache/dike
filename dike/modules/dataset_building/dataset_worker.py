@@ -3,19 +3,21 @@ import typing
 
 import pandas
 from configuration.dike import DikeConfig
-from utils.logger import LoggedMessageType, Logger
+from modules.types import AnalyzedFileTypes
+from modules.utils.logger import LoggedMessageType, Logger
 
 
 class DatasetWorker:
     """Class for working with datasets"""
     @staticmethod
-    def create_dataset(min_malice: float, desired_families: typing.List[bool],
-                       enties_count: int, benign_ratio: float,
-                       output_filename: str) -> None:
+    def create_dataset(file_type: AnalyzedFileTypes, min_malice: float,
+                       desired_families: typing.List[bool], enties_count: int,
+                       benign_ratio: float, output_filename: str) -> None:
         """Creates a custom dataset (a CSV containing the labels of the selected
         samples) based on the given parameters.
 
         Args:
+            file_type (AnalyzedFileTypes): Type of files to include
             min_malice (float): Minimum malice score of malware samples included
                                 in the dataset
             desired_families (typing.List[bool]): Array of booleans, in which
@@ -29,6 +31,12 @@ class DatasetWorker:
         """
         malware_labels_df = pandas.read_csv(DikeConfig.MALWARE_LABELS)
         benign_labels_df = pandas.read_csv(DikeConfig.BENIGN_LABELS)
+
+        # Select only the desired file type
+        malware_labels_df = malware_labels_df[malware_labels_df["type"] ==
+                                              file_type.value]
+        benign_labels_df = benign_labels_df[benign_labels_df["type"] ==
+                                            file_type.value]
 
         # Get entries count for each type of sample
         malware_count = int((1 - benign_ratio) * enties_count)

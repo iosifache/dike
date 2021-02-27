@@ -6,12 +6,13 @@ import pandas
 import scipy
 from configuration.dike import DikeConfig
 from sklearn.preprocessing import Binarizer, KBinsDiscretizer, MinMaxScaler
-from subordinate.modules.features_extraction.types import ExtractorsType
-from subordinate.modules.preprocessing.preprocessors import (
-    Counter, CountVectorizer, GroupCounter, Identity, NGrams, Preprocessor,
-    SameLengthImputer)
-from subordinate.modules.preprocessing.types import PreprocessorsTypes
-from utils.configuration import ConfigurationSpace, ConfigurationWorker
+from modules.features_extraction.types import ExtractorsType
+from modules.preprocessing.preprocessors import (Counter, CountVectorizer,
+                                                 GroupCounter, Identity,
+                                                 NGrams, Preprocessor,
+                                                 SameLengthImputer)
+from modules.preprocessing.types import PreprocessorsTypes
+from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 
 
 class PreprocessingCore:

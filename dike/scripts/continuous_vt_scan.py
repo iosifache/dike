@@ -40,8 +40,7 @@ TEMP_CSV_FILENAME = os.path.join("/tmp", CSV_FILENAME)
 
 
 class FileResults(dict):
-    """Class description found in
-    subordinate/modules/dataset_building/vt_scanner.py
+    """Class description found in modules/dataset_building/vt_scanner.py.
     """
     benign_votes: int = 0
     malware_votes: int = 0
@@ -56,8 +55,7 @@ class FileResults(dict):
 
 
 class VirusTotalScanner:
-    """Class description can be found in
-    subordinate/modules/dataset_building/vt_scanner.py
+    """Class description can be found in modules/dataset_building/vt_scanner.py.
     """
     _api_client: vt.Client = None
 
@@ -69,7 +67,7 @@ class VirusTotalScanner:
 
     def scan(self, file_hash: str):
         """Function description can be found in
-        subordinate/modules/dataset_building/vt_scanner.py
+        modules/dataset_building/vt_scanner.py.
         """
         file = self._api_client.get_object("/files/{}".format(file_hash))
 
