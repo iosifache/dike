@@ -4,16 +4,16 @@
 import sys
 
 import emojis
+from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 from riposte import Riposte
 from subordinate_leader import SubordinateLeader
-from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 
 # Check if a cold run is needed
 if (len(sys.argv) > 1 and sys.argv[1] == "exit"):
     sys.exit(0)
 
 # Get configuration
-config = ConfigurationWorker("../configuration/user/config.yaml")
+config = ConfigurationWorker()
 master_config = config.get_configuration_space(
     ConfigurationSpace.MASTER_SERVER)
 

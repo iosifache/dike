@@ -1,8 +1,6 @@
 """Script for extracting opcodes from an executable
 
-This script is written in Python 2 due to the constraints of the Ghidra API.
-
-"""
+This script is written in Python 2 due to the constraints of the Ghidra API."""
 
 import sys
 

@@ -1,3 +1,14 @@
+"""Module implementing the evaluation of a model based on the results of its
+predictions
+
+Usage example:
+
+    regression_evaluation = ModelsEvaluator.evaluate_regression(
+        [0.14, 0.86, 0.08], [0.1, 0.9, 0.113])
+
+    classification_evaluation = ModelsEvaluator.evaluate_soft_multilabel_classification(
+        [[0, 1], [1, 0]], [[0.039, 0.984], [0.9, 0.35]], ["benign", "malware"])
+"""
 import math
 import typing
 
@@ -83,8 +94,7 @@ class ModelsEvaluator:
             y_real (np.matrix): Real values
             y_pred (np.matrix): Predicted values
             label_names (typing.List[str]): List of labels names, that are
-                                              included into the returned
-                                              dictionary
+                included into the returned dictionary
 
         Returns:
             dict: Dictionary containing all computed scores

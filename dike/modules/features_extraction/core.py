@@ -1,5 +1,11 @@
-"""Feature extractors for files"""
+"""Module implementing the core used to extract features for files
 
+Usage example:
+
+    core = ExtractionCore()
+    core.attach(ExtractorsType.STATIC_STRINGS)
+    raw_features = core.squeeze("path/to/malware.exe")
+"""
 import os
 import typing
 
@@ -14,25 +20,33 @@ from modules.dataset_building.types import AnalyzedFileTypes
 from modules.features_extraction.ghidra_wrapper import GhidraWrapper
 from modules.features_extraction.types import ExtractorsType
 from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
-from pypattyrn.creational.singleton import Singleton
+from modules.utils.errors import FileToExtractFromNotFoundError
 
 
-class ExtractionCore(object, metaclass=Singleton):
+class ExtractionCore(object):
     """Class managing the process of extracting features from file by applying
     extractors"""
-    _configuration: typing.Any = None
-    _static_bucket: carriers.StaticBucket = None
-    _dynamic_bucket: carriers.DynamicBucket = None
-    _document_bucket: carriers.DocumentBucket = None
-    _analyzed_file_types: typing.Set[AnalyzedFileTypes] = {}
-    _extractors: typing.List[extractors.Extractor] = []
+    _configuration: typing.Any
+    _static_bucket: carriers.StaticBucket
+    _dynamic_bucket: carriers.DynamicBucket
+    _document_bucket: carriers.DocumentBucket
+    _analyzed_file_types: typing.Set[AnalyzedFileTypes]
+    _extractors: typing.List[extractors.Extractor]
 
     def __init__(self) -> None:
         """Initialized the ExtractionCore instance."""
         # Read the extractors configuration
         full_config = ConfigurationWorker()
+        print(full_config.get_full_configuration())
         self._configuration = full_config.get_configuration_space(
             ConfigurationSpace.EXTRACTORS)
+
+        # Default value of members
+        self._static_bucket = None
+        self._dynamic_bucket = None
+        self._document_bucket = None
+        self._analyzed_file_types = {}
+        self._extractors = []
 
     @staticmethod
     def load_extractor_by_name(name: str) -> extractors.Extractor:
@@ -42,7 +56,8 @@ class ExtractionCore(object, metaclass=Singleton):
             name (str): Name of the extractor
 
         Returns:
-            extractors.Extractor: Extractor being request
+            extractors.Extractor: Extractor being request. None if the requested
+                extractor does not exists.
         """
         return getattr(extractors, name, None)
 
@@ -50,13 +65,17 @@ class ExtractionCore(object, metaclass=Singleton):
         """Attaches an extractor to the master.
 
         Args:
-            extractor (extractors.Extractor): Extractor instance being attached
+            extractor_type (ExtractorsType): Type of the extractor being
+                attached
         """
         extractor = ExtractionCore.load_extractor_by_name(extractor_type.value)
         file_types = extractor.get_analyzed_file_types()
+
         if not self._extractors:
             self._analyzed_file_types = file_types
             self._extractors.append(extractor())
+            return
+
         if file_types.issubset(self._analyzed_file_types):
             self._extractors.append(extractor())
 
@@ -87,9 +106,17 @@ class ExtractionCore(object, metaclass=Singleton):
         Args:
             filename (str): Name of the target file
 
+        Raises:
+            FileToExtractFromNotFoundError: The file given for the extraction
+                process could not be found or opened.
+
         Returns:
             list: List of extracted features
         """
+        # Check the existence of the file
+        if not os.path.isfile(filename):
+            raise FileToExtractFromNotFoundError()
+
         # Create new buckets for data
         self._static_bucket = carriers.StaticBucket()
         self._dynamic_bucket = carriers.DynamicBucket()
@@ -162,20 +189,20 @@ class ExtractionCore(object, metaclass=Singleton):
             disassembler.detail = True
             self._static_bucket.disassembler = disassembler
 
+            # Set the log file to be processed by the API extractors
+            _, basename = os.path.split(filename)
+            self._dynamic_bucket.log_file = os.path.join(
+                DikeConfig.QILING_LOGS_FOLDER,
+                basename + "." + DikeConfig.QILING_LOG_EXTENSION)
+
             # Check the Qiling rootfs folder and create the emulator
             qiling_rootfs = os.path.join(DikeConfig.QILING_ROOTFS_FOLDER,
                                          rootfs)
             emulator = qiling.Qiling([filename],
                                      qiling_rootfs,
-                                     ostype="windows",
+                                     ostype=qiling.const.QL_OS.WINDOWS,
                                      console=False,
-                                     log_dir=DikeConfig.QILING_LOGS_FOLDER)
-
-            # Set the log file to be processed by the API extractors
-            _, filename = os.path.split(filename)
-            self._dynamic_bucket.log_file = os.path.join(
-                DikeConfig.QILING_LOGS_FOLDER,
-                filename + "." + DikeConfig.QILING_LOG_EXTENSION)
+                                     log_file=self._dynamic_bucket.log_file)
 
             # Hook on each executed instruction and API call
             emulator.hook_code(ExtractionCore._hook_instruction,

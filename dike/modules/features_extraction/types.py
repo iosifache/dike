@@ -1,3 +1,4 @@
+"""Module defining th types used in the feature extraction functionality"""
 from enum import Enum
 
 

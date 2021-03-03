@@ -1,3 +1,10 @@
+"""Module implementing preprocessors
+
+Usage example:
+
+    preprocessor = Identity()
+    preprocessed_data = preprocessor.fit_transform([[0, 1, 2], [0], [0, 1]])
+"""
 from __future__ import annotations
 
 import abc
@@ -82,7 +89,7 @@ class Counter(Preprocessor):
 
 class CountVectorizer(Preprocessor):
     """Class representing a preprocessor for counting the words into a list"""
-    _inner_model: StandardCountVectorizer = None
+    _inner_model: StandardCountVectorizer
 
     def __init__(self) -> None:
         self._inner_model = StandardCountVectorizer()
@@ -132,9 +139,9 @@ class NGrams(Preprocessor):
         UPPERLOWERCASE_DIGITS_SPECIALS = UPPERLOWERCASE_DIGITS + \
             string.punctuation
 
-    n: int = None
-    to_lowercase: bool = False
-    valid_charset: Charset = None
+    n: int
+    to_lowercase: bool
+    valid_charset: Charset
 
     def __init__(self, n: int, to_lowercase: bool,
                  valid_charset: Charset) -> None:
@@ -143,9 +150,9 @@ class NGrams(Preprocessor):
         Args:
             n (int): Number of grouped characters
             to_lowercase (bool): Boolean indicating if input data is lowercased
-                                 before the effective processing
+                before the effective processing
             valid_charset (Charset): Charset instace, indicating the charset to
-                                     be used
+                be used
         """
         self.n = n
         self.to_lowercase = to_lowercase
@@ -199,10 +206,10 @@ class NGrams(Preprocessor):
 class GroupCounter(Preprocessor):
     """Class representing a preprocessor for categories-based frequency
     extraction"""
-    categories: dict = None
-    verbose: bool = True
-    min_ignored_percent: float = 0
-    allow_multiple_categories: bool = False
+    categories: dict
+    verbose: bool
+    min_ignored_percent: float
+    allow_multiple_categories: bool
 
     def __init__(
         self,
@@ -216,12 +223,11 @@ class GroupCounter(Preprocessor):
         Args:
             categories (dict): Categories in which the data is grouped
             allow_multiple_categories (bool): Boolean indicating if an entry can
-                                              can be grouped under multiple
-                                              categories
+                can be grouped under multiple categories
             verbose (bool): Boolean indicating if the outliers entries are
-                            logged
+                logged
             min_ignored_percent (float): Percentage of occurances above which a
-                                         skipped entry is considered outlier
+                skipped entry is considered outlier
         """
         self.categories = categories
         self.verbose = verbose
@@ -299,16 +305,15 @@ class GroupCounter(Preprocessor):
 class SameLengthImputer(Preprocessor):
     """Class representing a preprocessor that imputes the lines of a matrix to
     have the same length"""
-    desired_length: int = 0
+    desired_length: int
 
     def __init__(self, desired_length: int = 0) -> None:
         """Initialized the SameLengthImputer instance.
 
         Args:
             desired_length (int, optional): Length of the imputed samples.
-                                            Defaults to 0, in case of the desire
-                                            to reach the maximum length of the
-                                            samples.
+                Defaults to 0, in case of the desire to reach the maximum length
+                of the samples.
         """
         self.desired_length = desired_length
 

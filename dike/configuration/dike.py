@@ -7,6 +7,10 @@ class DikeConfig:
     # Folders
     DIKE_FOLDER = "/home/iosifache/Documents/dike/dike/"
 
+    ## Cofiguration
+    CONFIGURATION_FOLDER = DIKE_FOLDER + "configuration/"
+    USER_CONFIGURATION_FOLDER = CONFIGURATION_FOLDER + "user/"
+
     ## Data
     DATA_FOLDER = DIKE_FOLDER + "data/"
     DATASETS_FOLDER = DATA_FOLDER + "datasets/"
@@ -15,6 +19,7 @@ class DikeConfig:
     MALWARE_DATASET_FOLDER = FULL_DATASET_FOLDER + "malware/"
     BENIGN_DATASET_FOLDER = FULL_DATASET_FOLDER + "benign/"
     TRAINED_MODELS_FOLDER = DATA_FOLDER + "trained_models/"
+    TRAINED_MODELS_MODEL_FOLDER = TRAINED_MODELS_FOLDER + "{}"
     TRAINED_MODEL_PREPROCESSORS_FOLDER = TRAINED_MODELS_FOLDER + \
         "{}/preprocessors/"
 
@@ -38,6 +43,9 @@ class DikeConfig:
     GHIDRA_FOLDER = "/home/iosifache/Documents/Programs/ghidra/"
 
     # Files
+
+    # Configuration
+    USER_CONFIGURATON_FILE = USER_CONFIGURATION_FOLDER + "config.yaml"
 
     ## For files informations
     MALWARE_LABELS = FULL_DATASET_FOLDER + "malware_labels.csv"
@@ -68,7 +76,6 @@ class DikeConfig:
     ## For feature extraction
     API_CALLS_REGEX = r"^((\w)+)\("
     VT_ANTIVIRUS_MALWARE_CATEGORIES = ["malicious", "suspicious"]
-    MALWARE_CATEGORIES_COUNT = 9
 
     ## For trained models evaluation
     SAMPLING_STEPS_FOR_PLOTS = 10
@@ -95,7 +102,7 @@ class DikeConfig:
         """Class containing the mandatory keys from the user configuration of a
         pipeline
 
-        The constants whose names doesn't ends in underscore are the one
+        The constants whose names does not ends in underscore are the one
         required in the root of the configuration file. The rest of the keys are
         children of the root ones.
         """

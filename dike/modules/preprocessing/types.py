@@ -1,3 +1,4 @@
+"""Module defining the types used by the preprocessing functionality"""
 from enum import Enum
 
 

@@ -1,3 +1,4 @@
+"""Module implementing the classes extracting features from files"""
 import abc
 import collections
 import re
@@ -42,7 +43,7 @@ class Extractor(abc.ABC):
 
         Returns:
             typing.List[typing.Tuple[str, FeatureTypes]]: List of mentioned
-                                                          types
+                types
         """
         return
 
@@ -53,7 +54,7 @@ class Extractor(abc.ABC):
 
         Returns:
             typing.List[typing.List[PreprocessorsTypes]]: List of mentioned
-                                                          preprocessors
+                preprocessors
         """
         return
 
@@ -66,11 +67,11 @@ class Extractor(abc.ABC):
 
         Args:
             static_bucket (carriers.StaticBucket): Storage for static analysis
-                                                    results
+                results
             dynamic_bucket (carriers.DynamicBucket): Storage for dynamic
-                                                      analysis results
+                analysis results
             document_bucket (carriers.DocumentBucket): Storage for documents
-                                                        analysis results
+                analysis results
         """
         return
 
@@ -84,11 +85,11 @@ class Extractor(abc.ABC):
 
         Args:
             static_bucket (carriers.StaticBucket): Storage for static analysis
-                                                    results
+                results
             dynamic_bucket (carriers.DynamicBucket): Storage for dynamic
-                                                      analysis results
+                analysis results
             document_bucket (carriers.DocumentBucket): Storage for documents
-                                                        analysis results
+                analysis results
 
         Returns:
             typing.List[typing.List]: List of the extracted features
@@ -107,8 +108,13 @@ class StaticStrings(Extractor):
     - found string.
 
     """
-    _min_length: int = 1
-    _min_occurances: int = 1
+    _min_length: int
+    _min_occurances: int
+
+    def __init__(self) -> None:
+        # Default values of members
+        self._min_length = 1
+        self._min_occurances = 1
 
     @staticmethod
     def get_analyzed_file_types() -> typing.Set[AnalyzedFileTypes]:
@@ -132,7 +138,7 @@ class StaticStrings(Extractor):
         Args:
             min_length (int): Minimum length of a string to be saved
             min_occurances (int): Minimum number of occurances of a string to be
-                                  saved
+                saved
         """
         self._min_length = min_length
         self._min_occurances = min_occurances
@@ -351,8 +357,13 @@ class _APIs(Extractor, abc.ABC):
     Extracted features are:
     - Windows API calls.
     """
-    _ignored_prefixes: typing.List[str] = []
-    _ignored_suffixes: typing.List[str] = []
+    _ignored_prefixes: typing.List[str]
+    _ignored_suffixes: typing.List[str]
+
+    def __init__(self) -> None:
+        # Default values of members
+        self._ignored_prefixes = []
+        self._ignored_suffixes = []
 
     @staticmethod
     def get_analyzed_file_types() -> typing.Set[AnalyzedFileTypes]:
@@ -537,7 +548,7 @@ class GeneralOLEDetails(Extractor):
             if (property_name in [
                     "title", "subject", "author", "keywords", "comments",
                     "last_saved_by"
-            ]):
+            ] and property_value):
                 document_bucket.header_text.append(
                     property_value.decode("utf-8"))
             elif (property_name == "total_edit_time"):

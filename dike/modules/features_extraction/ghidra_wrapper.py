@@ -1,3 +1,9 @@
+"""Module implementing a wrapper over the Ghidra decompiler
+
+Usage example:
+
+    features = GhidraWrapper.analyse_file("path/to/malware.exe", True, True)
+"""
 import subprocess
 
 from configuration.dike import DikeConfig
@@ -18,11 +24,11 @@ class GhidraWrapper:
 
         Args:
             full_filename (str): Name of the file under analysis, containing
-                                 the full path too
+                the full path too
             extract_opcodes (bool): Boolean indicating if the opcodes are
-                                    extracted
+                extracted
             extract_api_calls (bool): Boolean indicating if the API calls are
-                                      extracted
+                extracted
 
         Returns:
             list: List of the extracted features

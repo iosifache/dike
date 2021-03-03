@@ -1,3 +1,4 @@
+"""Module defining the types used by the module management functionality"""
 from enum import Enum
 
 

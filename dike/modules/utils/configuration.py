@@ -1,14 +1,26 @@
+"""Module working with configuration files
+
+Usage example:
+
+    configuration = ConfigurationWorker()
+    secrets_config = full_config.get_configuration_space(
+        ConfigurationSpace.SECRETS)
+
+"""
+
 import os
 import typing
 from enum import Enum
 
 import yaml
-from pypattyrn.creational.singleton import Singleton
+from configuration.dike import DikeConfig
 from modules.utils.logger import LoggedMessageType, Logger
+from utils.errors import (ConfigurationFileNotFoundError,
+                          ConfigurationKeyNotFoundError)
 
 
 class ConfigurationSpace(Enum):
-    """Enumeration for available configuration spaces."""
+    """Enumeration for available configuration spaces"""
     MASTER_SERVER = "master_server"
     SUBORDINATE_SERVER = "subordintate_server"
     EXTRACTORS = "extractors"
@@ -19,7 +31,7 @@ class ConfigurationSpace(Enum):
     SECRETS = "secrets"
 
 
-class ConfigurationWorker(object, metaclass=Singleton):
+class ConfigurationWorker(object):
     """Singleton class that implements the worker with configuration files.
 
     This class helps to work with the standard configuration file, by providing
@@ -32,43 +44,61 @@ class ConfigurationWorker(object, metaclass=Singleton):
             # pylint: disable=protected-access
             super(ConfigurationWorker._Loader, self).__init__(stream)
 
+        # pylint: disable=missing-function-docstring
         def include(self, node):
-            """Same as the corresponding method of the parent class"""
             filename = os.path.join(self._root, self.construct_scalar(node))
             with open(filename, "r") as file:
                 # pylint: disable=protected-access
                 return yaml.load(file, ConfigurationWorker._Loader)
 
+    _instance: "ConfigurationWorker" = None
+    _filename: str = None
     _config: typing.Any = None
 
-    def __init__(self, filename: str = None) -> None:
-        """Initializes the ConfigurationWorker instance.
+    def __new__(cls, filename: str = DikeConfig.USER_CONFIGURATON_FILE):
+        """Creates a new ConfigurationWorker instance.
 
         Args:
             filename (str, optional): Name of the configuration file. Mentioned
-                                      ony on the singleton instanciation.
-                                      Defaults to None.
+                ony on the singleton instanciation. Defaults to
+                DikeConfig.USER_CONFIGURATON_FILE, if the configuration was
+                already readed in other part of the program or if the platform's
+                default configuration file should be used.
 
         Raises:
-            FileNotFoundError: File does not exists
+            ConfigurationFileNotFoundError: The configuration file could not be
+                found or opened.
         """
-        if (filename is None):
-            return None
-        ConfigurationWorker._Loader.add_constructor(
-            '!include', ConfigurationWorker._Loader.include)
-        try:
-            with open(filename) as config_file:
-                self._config = yaml.load(config_file,
-                                         Loader=ConfigurationWorker._Loader)
-        except:
-            raise FileNotFoundError()
-        Logger.log("Configuration file imported", LoggedMessageType.SUCCESS)
+        if (cls._instance is None) or (cls._filename
+                                       and cls._filename != filename):
+            # Create the class instance
+            cls._instance = super(ConfigurationWorker, cls).__new__(cls)
+
+            # Set the filename
+            cls._filename = filename
+
+            # Add the custom YAML loader
+            ConfigurationWorker._Loader.add_constructor(
+                '!include', ConfigurationWorker._Loader.include)
+
+            # Try to read the configuration from the given file
+            try:
+                config_file = open(filename, "r")
+                cls._config = yaml.load(config_file,
+                                        Loader=ConfigurationWorker._Loader)
+            except:
+                raise ConfigurationFileNotFoundError()
+
+            Logger.log("Configuration file imported",
+                       LoggedMessageType.SUCCESS)
+
+        return cls._instance
 
     def get_full_configuration(self) -> typing.Any:
         """Gets the configuration stored in the given file.
 
         Returns:
-            typing.Any: Configuration object, represented by the given YAML
+            typing.Any: Configuration object, represented by the given YAML file
         """
         return self._config
 
@@ -81,5 +111,12 @@ class ConfigurationWorker(object, metaclass=Singleton):
 
         Returns:
             typing.Any: Subset of the full configuration object
+
+        Raises:
+            ConfigurationKeyNotFoundError: The requested key from the
+                configuration file could not be found.
         """
-        return self._config[space.value]
+        try:
+            return self._config[space.value]
+        except KeyError:
+            raise ConfigurationKeyNotFoundError()
