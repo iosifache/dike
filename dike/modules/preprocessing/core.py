@@ -1,3 +1,20 @@
+"""Module implementing the preprocessing core, namely a pipeline for applying
+preprocessors
+
+Usage example:
+
+    # Read the required configuration
+    configuration = ConfigurationWorker()
+
+    # Create the core
+    core = PreprocessingCore()
+
+    # Attach some preprocessors to the core
+    core.attach(PreprocessorsTypes.IDENTITY)
+
+    # Preprocess the data stored in the constant DATA
+    preprocessed_data = core.preprocess([[1, 2, 0, 4], [0, 1, 3, 6]])
+"""
 import typing
 
 import joblib
@@ -16,13 +33,16 @@ from sklearn.preprocessing import Binarizer, KBinsDiscretizer, MinMaxScaler
 
 
 class PreprocessingCore:
-    """Class for preprocessing data by applying preprocessors"""
-    _is_loaded: bool = False
-    _extractors_config: typing.Any = None
-    _preprocessors_config: typing.Any = None
-    _preprocessors: typing.List[Preprocessor] = []
-    _columns_to_be_filled: list = []
-    _last_scalar_model: MinMaxScaler = None
+    """Class for preprocessing data by applying preprocessors
+    
+    Requires a loaded configuration.
+    """
+    _is_loaded: bool
+    _extractors_config: typing.Any
+    _preprocessors_config: typing.Any
+    _preprocessors: typing.List[Preprocessor]
+    _columns_to_be_filled: list
+    _last_scalar_model: MinMaxScaler
 
     def __init__(self) -> None:
         """Initializes the PreprocessingCore instance."""
@@ -34,13 +54,22 @@ class PreprocessingCore:
             configuration_worker.get_configuration_space(\
                 ConfigurationSpace.PREPROCESSORS)
 
-    def attach(self, preprocessor_type: PreprocessorsTypes,
-               parent_extractor_type: ExtractorsType) -> None:
+        # Default value of members
+        self._is_loaded = False
+        self._preprocessors = []
+        self._columns_to_be_filled = []
+        self._last_scalar_model = None
+
+    def attach(self,
+               preprocessor_type: PreprocessorsTypes,
+               parent_extractor_type: ExtractorsType = None) -> None:
         """Attaches a preprocessor to master.
 
         Args:
             preprocessor_type (PreprocessorsTypes): Type of the preprocessor
-            parent_extractor_type (ExtractorsType): Type of the parent extractor
+            parent_extractor_type (ExtractorsType): Type of the parent
+                extractor. Defaults to None, in case of a preprocessor that
+                does not require special arguments.
         """
         # Check what arguments are needed for the current preprocessor
         arguments = {}

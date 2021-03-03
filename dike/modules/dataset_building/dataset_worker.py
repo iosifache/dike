@@ -1,3 +1,19 @@
+"""Module for manipulating datasets
+
+Usage example:
+
+    # Create a dataset of 100 benign PE and 100 malware samples, with minimum
+    # malice of 0.9
+    DatasetWorker.create_dataset(AnalyzedFileTypes.PE, 0.9, 9 * [True], 200,
+                                 0.5, "pe_malice.csv")
+
+    # Create a dataset of 200 generic and trojan PE samples, with minimum malice
+    # of 0.9
+    DatasetWorker.create_dataset(
+        AnalyzedFileTypes.PE, 0.9,
+        [True, True, False, False, False, False, False, False, False], 200, 0,
+        "pe_generic_vs_tojan.csv")
+"""
 import os
 import typing
 
@@ -12,31 +28,33 @@ class DatasetWorker:
     @staticmethod
     def create_dataset(file_type: AnalyzedFileTypes, min_malice: float,
                        desired_families: typing.List[bool], enties_count: int,
-                       benign_ratio: float, output_filename: str) -> None:
+                       benign_ratio: float, output_filename: str) -> bool:
         """Creates a custom dataset (a CSV containing the labels of the selected
         samples) based on the given parameters.
 
         Args:
             file_type (AnalyzedFileTypes): Type of files to include
             min_malice (float): Minimum malice score of malware samples included
-                                in the dataset
+                in the dataset
             desired_families (typing.List[bool]): Array of booleans, in which
-                                                  each entry indicates if the
-                                                  pointed family (via index) is
-                                                  included into the dataset
+                each entry indicates if the pointed family (via index) is
+                included into the dataset
             enties_count (int): Mandatory number of entries in the dataset
             benign_ratio (float): Ratio between the size of benign samples and
-                                  of the whole dataset
+                of the whole dataset
             output_filename (str): The basename of the output file
+
+        Returns:
+            bool: Boolean indicating if the dataset was successfully created
         """
         malware_labels_df = pandas.read_csv(DikeConfig.MALWARE_LABELS)
         benign_labels_df = pandas.read_csv(DikeConfig.BENIGN_LABELS)
 
         # Select only the desired file type
         malware_labels_df = malware_labels_df[malware_labels_df["type"] ==
-                                              file_type.value]
+                                              file_type.value.ID]
         benign_labels_df = benign_labels_df[benign_labels_df["type"] ==
-                                            file_type.value]
+                                            file_type.value.ID]
 
         # Get entries count for each type of sample
         malware_count = int((1 - benign_ratio) * enties_count)
@@ -52,9 +70,11 @@ class DatasetWorker:
             Logger.log("Insufficient entries to build a dataset",
                        LoggedMessageType.FAIL)
 
+            return False
+
         # Select entries with maximum membership to the given categories
         desired_families_int = [1 if elem else 0 for elem in desired_families]
-        malware_labels_df["membership"] = malware_labels_df.iloc[:, 2:].dot(
+        malware_labels_df["membership"] = malware_labels_df.iloc[:, 3:].dot(
             desired_families_int)
         malware_labels_df.sort_values("membership")
         del malware_labels_df["membership"]
@@ -71,3 +91,5 @@ class DatasetWorker:
         output_full_filename = os.path.join(DikeConfig.CUSTOM_DATASETS_FOLDER,
                                             output_filename)
         all_labels_df.to_csv(output_full_filename, index=False)
+
+        return True

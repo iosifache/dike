@@ -1,3 +1,9 @@
+"""Module logging information on screen
+
+Usage example:
+
+    Logger.log("This message will be logged.", LoggedMessageType.NEW_MESSAGE)
+"""
 from enum import Enum
 
 import emojis
@@ -9,7 +15,7 @@ class LoggedMessageType(Enum):
     STANDARD = ""
     BEGINNING = ":on:"
     END = ":end:"
-    WORK = ":hammer"
+    WORK = ":hammer:"
     SUCCESS = ":white_check_mark:"
     FAIL = ":no_entry_sign:"
     NEW = ":new:"
@@ -23,15 +29,16 @@ class Logger:
     @staticmethod
     def log(message: str,
             message_type: LoggedMessageType = LoggedMessageType.STANDARD,
-            end="\n") -> None:
+            end: str = "\n") -> None:
         """Logs a message on screen.
 
         Args:
             message (str): Message text
             message_type (LoggedMessageType, optional): Message type. Defaults
-                                                        to LoggedMessageType.STANDARD.
+                to LoggedMessageType.STANDARD.
             end (str, optional): String appended at the end of the message.
-                                 Defaults to "\n".
+                Defaults to "\n".
         """
-        message = emojis.encode(message_type.value + " " + message)
+        if (message_type != LoggedMessageType.STANDARD):
+            message = emojis.encode(message_type.value + " " + message)
         print(message, end=end)

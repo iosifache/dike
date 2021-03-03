@@ -10,13 +10,13 @@ from modules.utils.logger import LoggedMessageType, Logger
 
 class SubordinateService(rpyc.Service):
     """Class implementing the RPyC service needed for the subordinate servers"""
-    ALIASES: list = []
-    _scanner: DataFolderScanner = None
-    _busy: bool = False
-    _busy_mutex: Lock = Lock()
-    _malware_families: dict = {}
-    _malware_benign_vote_ratio: int = 1
-    _min_ignored_percent: float = 0
+    ALIASES: list
+    _scanner: DataFolderScanner
+    _busy: bool
+    _busy_mutex: Lock
+    _malware_families: dict
+    _malware_benign_vote_ratio: int
+    _min_ignored_percent: float
 
     def __init__(self, new_alias: str, malware_families: dict,
                  malware_benign_vote_ratio: int,
@@ -34,6 +34,11 @@ class SubordinateService(rpyc.Service):
         self._malware_families = malware_families
         self._malware_benign_vote_ratio = malware_benign_vote_ratio
         self._min_ignored_percent = min_ignored_percent
+
+        # Default value of members
+        self._scanner = DataFolderScanner()
+        self._busy = False
+        self._busy_mutex = Lock()
 
     # pylint: disable=unused-argument
     def on_connect(self, connection: rpyc.Connection) -> None:
@@ -65,9 +70,7 @@ class SubordinateService(rpyc.Service):
     def update_malware_labels(self) -> None:
         """Updates the labels of the malware.
         """
-        DataFolderScanner.update_malware_labels(
-            self._malware_families, self._malware_benign_vote_ratio,
-            self._min_ignored_percent)
+        self._scanner.update_malware_labels()
 
     def start_data_scanning(self,
                             malware_folder: bool,
@@ -81,8 +84,6 @@ class SubordinateService(rpyc.Service):
         DataFolderScanner constructor and DataFolderScanner.start_scanning
         method.
         """
-        self._scanner = DataFolderScanner(vt_api_key, self._malware_families,
-                                          self._malware_benign_vote_ratio)
         self._scanner.start_scanning(malware_folder, folder_watch_interval,
                                      vt_scan_interval)
 

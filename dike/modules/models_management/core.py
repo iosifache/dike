@@ -1,3 +1,12 @@
+"""Module implementing the core managing the training of models
+
+Usage example:
+
+    core = ModelsManagementCore()
+    model_name = core.train("model_configuration.yaml")
+    prediction = core.predict("path/to/malware.exe", True, 3)
+    core.dump()
+"""
 import json
 import os
 import shutil
@@ -21,6 +30,9 @@ from modules.models_management.types import (ModelObjective,
 from modules.preprocessing.core import PreprocessingCore
 from modules.preprocessing.types import PreprocessorsTypes
 from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
+from modules.utils.errors import (FileToExtractFromNotFoundError,
+                                  ModelConfigurationFileNotFoundError,
+                                  ModelToLoadNotFoundError)
 from modules.utils.logger import LoggedMessageType, Logger
 from sklearn.base import BaseEstimator
 from sklearn.decomposition import NMF, PCA, FastICA
@@ -36,26 +48,49 @@ from sklearn.tree import DecisionTreeRegressor
 class ModelsManagementCore:
     """Class managing the process of model training and exploitation
     (for prediction)"""
-    _is_ready: bool = False
-    _is_unchanged: bool = False
-    _configuration_filename: str = None
-    _dataset_filename: str = None
-    _files_extension: AnalyzedFileTypes = None
-    _extractors_types: typing.List[ExtractorsType] = []
-    _preprocessors_types: typing.List[typing.List[PreprocessorsTypes]] = []
-    _model_objective: ModelObjective = None
-    _reduction_algorithm: ReductionAlgorithm = None
-    _min_variance: float = 0
-    _ml_algorithm: Enum = None
-    _dataset: pandas.DataFrame = None
-    _extraction_core: ExtractionCore = None
-    _preprocessing_core: PreprocessingCore = None
-    _reduction_model: BaseEstimator = None
-    _ml_model: BaseEstimator = None
-    _split_ratio: float = None
-    _reduced_features: np.array = None
-    _model_unique_name: str = None
-    _evaluation_results: dict = None
+    _is_ready: bool
+    _is_unchanged: bool
+    _configuration_filename: str
+    _dataset_filename: str
+    _files_extension: AnalyzedFileTypes
+    _extractors_types: typing.List[ExtractorsType]
+    _preprocessors_types: typing.List[typing.List[PreprocessorsTypes]]
+    _model_objective: ModelObjective
+    _reduction_algorithm: ReductionAlgorithm
+    _min_variance: float
+    _ml_algorithm: Enum
+    _dataset: pandas.DataFrame
+    _extraction_core: ExtractionCore
+    _preprocessing_core: PreprocessingCore
+    _reduction_model: BaseEstimator
+    _ml_model: BaseEstimator
+    _split_ratio: float
+    _reduced_features: np.array
+    _model_unique_name: str
+    _evaluation_results: dict
+
+    def __init__(self) -> None:
+        # Default values of members
+        self._is_ready = False
+        self._is_unchanged = False
+        self._configuration_filename = None
+        self._dataset_filename = None
+        self._files_extension = None
+        self._extractors_types = []
+        self._preprocessors_types = []
+        self._model_objective = None
+        self._reduction_algorithm = None
+        self._min_variance = 0
+        self._ml_algorithm = None
+        self._dataset = None
+        self._extraction_core = None
+        self._preprocessing_core = None
+        self._reduction_model = None
+        self._ml_model = None
+        self._split_ratio = None
+        self._reduced_features = None
+        self._model_unique_name = None
+        self._evaluation_results = None
 
     def _check_and_load_configuration(self, filename: str):
         # Try to read the configuration file
@@ -63,9 +98,7 @@ class ModelsManagementCore:
             with open(filename, "r") as config_file:
                 configuration = yaml.load(config_file, Loader=yaml.SafeLoader)
         except:
-            Logger.log("The model configuration file does not exists",
-                       LoggedMessageType.FAIL)
-            return False
+            raise ModelConfigurationFileNotFoundError()
 
         # Check if the main keys are present
         valid_keys = [
@@ -80,10 +113,6 @@ class ModelsManagementCore:
                     "The model configuration file does not contain all mandatory keys",
                     LoggedMessageType.FAIL)
                 return False
-
-        # Generate an unique name for the model to be used to dump it
-        self._model_unique_name = self._generate_unique_model_name(
-            self._configuration_filename)
 
         # Check if the dataset file exists
         dataset_config = configuration[
@@ -221,18 +250,28 @@ class ModelsManagementCore:
 
         return model_name
 
-    def _load_models_components(self, configuration_filename: str) -> None:
+    def _load_models_components(self,
+                                configuration_filename: str,
+                                attach_preprocessors: bool = True) -> None:
         # Verify the configuration file
         if not self._check_and_load_configuration(configuration_filename):
             return False
+
+        # Create the preprocessors core
+        self._preprocessing_core = PreprocessingCore()
+
+        # Attach the preprocessors
+        if attach_preprocessors:
+            for extractor, corresponding_preprocessors in zip(
+                    self._extractors_types, self._preprocessors_types):
+                for current_preprocessor_type in corresponding_preprocessors:
+                    self._preprocessing_core.attach(current_preprocessor_type,
+                                                    extractor)
 
         # Create the extractor master and attach the needed extractor to it
         self._extraction_core = ExtractionCore()
         for extractor_type in self._extractors_types:
             self._extraction_core.attach(extractor_type)
-
-        # Create the preprocessors core
-        self._preprocessing_core = PreprocessingCore()
 
         # Load the dataset
         self._dataset = pandas.read_csv(self._dataset_filename)
@@ -241,12 +280,6 @@ class ModelsManagementCore:
         self._is_ready = True
 
     def _base_train(self) -> None:
-        # Attach the preprocessors
-        for extractor, corresponding_preprocessors in zip(
-                self._extractors_types, self._preprocessors_types):
-            for current_preprocessor_type in corresponding_preprocessors:
-                self._preprocessing_core.attach(current_preprocessor_type,
-                                                extractor)
 
         # Extract features from each file in the dataset
         raw_features = []
@@ -346,12 +379,16 @@ class ModelsManagementCore:
             "Successfully trained model {}".format(self._model_unique_name),
             LoggedMessageType.SUCCESS)
 
-    def train(self, configuration_filename):
+    def train(self, configuration_filename) -> None:
         """Trains a new model following the configuration from a file.
 
         Args:
             configuration_filename (str): Name of the configuration file
         """
+        # Generate an unique name for the model to be used to dump it
+        self._model_unique_name = self._generate_unique_model_name(
+            configuration_filename)
+
         # Save the configuration filename
         self._configuration_filename = configuration_filename
 
@@ -361,7 +398,7 @@ class ModelsManagementCore:
         # Train
         self._base_train()
 
-    def retrain(self):
+    def retrain(self) -> None:
         """Retrains the already loaded model."""
         self._base_train()
 
@@ -378,13 +415,11 @@ class ModelsManagementCore:
 
         Args:
             filename (str): Name of the file over which a prediction will be
-                            made
+                made
             similarity_analysis (bool, optional): Boolean indicating if a
-                                                  similarity analysis needs to
-                                                  be done. Defaults to False.
+                similarity analysis needs to be done. Defaults to False.
             similar_count (int, optional): Number of similar samples to return.
-                                           Defaults to 0, if the similarity
-                                           analysis is disabled.
+                Defaults to 0, if the similarity analysis is disabled.
 
         Returns:
             dict: Prediction results
@@ -396,7 +431,7 @@ class ModelsManagementCore:
         # Extract features from file
         try:
             raw_features = self._extraction_core.squeeze(filename)
-        except:
+        except FileToExtractFromNotFoundError:
             return {"status": "error"}
 
         # Apply the preprocessors and the dimensionality reduction algorithm
@@ -451,8 +486,12 @@ class ModelsManagementCore:
                                          self._model_unique_name)
         if os.path.isdir(model_dump_folder):
             is_retraining = True
+
             original_model_dump_folder = model_dump_folder
             model_dump_folder += DikeConfig.RETRAIN_FOLDER_PREFIX
+
+            original_model_name = self._model_unique_name
+            self._model_unique_name += DikeConfig.RETRAIN_FOLDER_PREFIX
         else:
             is_retraining = False
         os.mkdir(model_dump_folder)
@@ -520,8 +559,9 @@ class ModelsManagementCore:
 
         # Remove the old folder and rename the current one
         if is_retraining:
-            os.rmdir(original_model_dump_folder)
-            os.rename(model_dump_folder, original_model_dump_folder)
+            self._model_unique_name = original_model_name
+            shutil.rmtree(original_model_dump_folder)
+            shutil.move(model_dump_folder, original_model_dump_folder)
 
         # Log success
         Logger.log(
@@ -536,6 +576,13 @@ class ModelsManagementCore:
         Args:
             model_name (str): Name of the model to be loaded
         """
+        # Check the existence of the given model
+        model_full_path = DikeConfig.TRAINED_MODELS_MODEL_FOLDER.format(
+            model_name)
+        print(model_full_path)
+        if (not os.path.isdir(model_full_path)):
+            raise ModelToLoadNotFoundError()
+
         self._model_unique_name = model_name
 
         # Get and load the configuration
@@ -544,7 +591,7 @@ class ModelsManagementCore:
         self._configuration_filename = configuration_filename
 
         # Initialize components
-        self._load_models_components(self._configuration_filename)
+        self._load_models_components(self._configuration_filename, False)
 
         # Load the dimensionality reduction model
         reduction_model_path = DikeConfig.TRAINED_MODEL_REDUCTION_MODEL.format(

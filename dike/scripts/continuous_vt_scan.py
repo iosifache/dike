@@ -1,7 +1,7 @@
-"""Script for continuously scan hashes using Virus Total API
+"""Script for continuously scan hashes using VirusTotal API
 
 It needs to be deployed as a Google Cloud Function. It consumes hashes from a
-file on a bucket from Google Cloud Storage, scan them using Virus Total, and
+file on a bucket from Google Cloud Storage, scan them using VirusTotal, and
 adds a new entry into a CSV file saved in the same bucket.
 
 The script is platform-independent (the required classes are already included)
@@ -11,7 +11,7 @@ Environment variables that must be set are:
 - BUCKET_NAME, for the name of the bucket from Google Cloud Storage;
 - HASHES_FILENAME, for the name of the file containing hashes;
 - CSV_FILENAME, for the name of the CSV file where results are dumped; and
-- VT_API_KEY, for Virus Total API key.
+- VT_API_KEY, for VirusTotal API key.
 
 Required modules, to be noted in requirements.txt in the Cloud Function are:
 - vt_py (used version at the time was 0.6.1); and
@@ -42,9 +42,9 @@ TEMP_CSV_FILENAME = os.path.join("/tmp", CSV_FILENAME)
 class FileResults(dict):
     """Class description found in modules/dataset_building/vt_scanner.py.
     """
-    benign_votes: int = 0
-    malware_votes: int = 0
-    raw_tags: typing.List[str] = []
+    benign_votes: int
+    malware_votes: int
+    raw_tags: typing.List[str]
 
     def __init__(self, benign_votes: int, malware_votes: int,
                  raw_tags: typing.List[str]) -> None:
@@ -57,7 +57,7 @@ class FileResults(dict):
 class VirusTotalScanner:
     """Class description can be found in modules/dataset_building/vt_scanner.py.
     """
-    _api_client: vt.Client = None
+    _api_client: vt.Client
 
     def __init__(self, api_key: str) -> None:
         self._api_client = vt.Client(api_key)

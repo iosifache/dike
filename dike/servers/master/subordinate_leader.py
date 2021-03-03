@@ -5,16 +5,16 @@ import typing
 
 import rpyc
 import tqdm
-from pypattyrn.creational.singleton import Singleton
 from modules.utils.logger import LoggedMessageType, Logger
+from pypattyrn.creational.singleton import Singleton
 
 
 class _Connection:
     """Class for encapsulating details about an active connection"""
-    host: str = None
-    port: int = None
-    connection: rpyc.Connection = None
-    is_busy: bool = False
+    host: str
+    port: int
+    effective_connection: rpyc.Connection
+    is_busy: bool
 
     def __init__(self, host: str, port: int,
                  connection: rpyc.Connection) -> None:
@@ -29,15 +29,18 @@ class _Connection:
         self.port = port
         self.effective_connection = connection
 
+        # Default value of members
+        self.is_busy = False
+
 
 class SubordinateLeader(object, metaclass=Singleton):
     """Class controlling subordinate servers"""
-    _service_name: str = None
-    _default_port_number: int = -1
-    _connections: typing.List[_Connection] = []
-    _answers: typing.List[rpyc.AsyncResult] = []
-    _answers_thread: threading.Thread = None
-    _stop_needed: bool = False
+    _service_name: str
+    _default_port_number: int
+    _connections: typing.List[_Connection]
+    _answers: typing.List[rpyc.AsyncResult]
+    _answers_thread: threading.Thread
+    _stop_needed: bool
 
     def __init__(self, default_port_number: int, service_name: str,
                  answers_checking_interval: int) -> None:
@@ -58,9 +61,10 @@ class SubordinateLeader(object, metaclass=Singleton):
             target=self._check_answers, args=(answers_checking_interval, ))
         self._answers_thread.start()
 
-    def __del__(self):
-        """Destroys the SubordinateLeader instance."""
-        self._stop_needed = True
+        # Default value of members
+        self._connections: typing.List = []
+        self._answers: typing.List = []
+        self._stop_needed = False
 
     def _check_answers(self, sleep_seconds: int):
         while (not self._stop_needed):

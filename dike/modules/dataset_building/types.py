@@ -1,3 +1,11 @@
+"""Module defining analyzed file types
+
+Usage example:
+
+    file_type = AnalyzedFileTypes.PE
+    file_type = AnalyzedFileTypes.map_extension_to_type("exe")
+    file_type = AnalyzedFileTypes.map_id_to_type(0)
+"""
 from __future__ import annotations
 
 from enum import Enum
@@ -24,11 +32,11 @@ class AnalyzedFileTypes(Enum):
 
         Returns:
             AnalyzedFileTypes: Corresponding AnalyzedFileTypes class or, if
-                               there is not an mapping defined for this
-                               extension, None
+                there is not an mapping defined for this extension, None
         """
         MAP = {
             "exe": AnalyzedFileTypes.PE,
+            "ole": AnalyzedFileTypes.OLE,
             "doc": AnalyzedFileTypes.OLE,
             "docx": AnalyzedFileTypes.OLE,
             "docm": AnalyzedFileTypes.OLE,
@@ -42,7 +50,7 @@ class AnalyzedFileTypes(Enum):
 
         try:
             return MAP[extension]
-        except:
+        except KeyError:
             return None
 
     @staticmethod
@@ -54,8 +62,7 @@ class AnalyzedFileTypes(Enum):
 
         Returns:
             AnalyzedFileTypes: Corresponding AnalyzedFileTypes class or, if
-                               there is not an mapping defined for this
-                               extension, None
+                there is not an mapping defined for this extension, None
         """
         for child in AnalyzedFileTypes:
             if (child.value.ID == type_id):
