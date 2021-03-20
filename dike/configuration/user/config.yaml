@@ -3,18 +3,24 @@
 master_server:
     cli:
         banner: |
-            ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
-            █░▄▀██▄██░█▀█░▄▄█
-            █░█░██░▄█░▄▀█░▄▄█
-            █▄▄██▄▄▄█▄█▄█▄▄▄█
-            ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
-        prompt: dike
+            \n
+                ▀██   ██  ▀██
+              ▄▄ ██  ▄▄▄   ██  ▄▄    ▄▄▄▄
+            ▄▀  ▀██   ██   ██ ▄▀   ▄█▄▄▄██
+            █▄   ██   ██   ██▀█▄   ██
+            ▀█▄▄▀██▄ ▄██▄ ▄██▄ ██▄  ▀█▄▄▄▀
+            \n
+            Platform for automatic analysis of malicious applications
+            using artificial intelligence algorithms
+        prompt: "dike :wavy_dash: "
+        citation_line_prefix: "▒    "
+        max_string_len: 30
+        string_part_hidden: ...
     answers_checking_interval: 1
 
 subordintate_server:
     hostname: 0.0.0.0
     port: 1234
-    service_name: dike
 
 extractors:
     strings:
@@ -60,6 +66,11 @@ machine_learning:
     retraining:
         stringified_time: "00:00"
         workers_count: 4
+    prediction:
+        model_lifetime: 60
+        ticket_lifetime: 60
+        ticket_length: 32
+        checking_interval: 10
 
 database:
     hostname: localhost

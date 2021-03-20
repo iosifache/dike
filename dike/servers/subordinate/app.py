@@ -6,18 +6,21 @@ used to wait for and respond to RPC calls from the master.
 """
 
 from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
-from rpyc.modules.utils.helpers import classpartial
-from rpyc.modules.utils.server import ThreadPoolServer
-from subordinate.services import SubordinateService
+from modules.utils.logger import Logger
+from rpyc import ThreadPoolServer
+from servers.subordinate.services import SubordinateService
 
 # Configuration for RPyC's ThreadPoolServer
 CONFIGURATION = {
-    "allow_public_attrs": True,
+    "allow_all_attrs": True,
 }
 
 
 def main():
-    """Main function"""
+    """Runs the server."""
+    # Enable the logger and set it for internal buffering
+    Logger().set_enable(enable=True)
+    Logger().set_internal_buffering()
 
     # Get configuration
     config = ConfigurationWorker()
@@ -25,8 +28,7 @@ def main():
         ConfigurationSpace.SUBORDINATE_SERVER)
 
     # Create new service, server and start the server
-    service = classpartial(SubordinateService)
-    server = ThreadPoolServer(service,
+    server = ThreadPoolServer(SubordinateService,
                               hostname=server_config["hostname"],
                               port=server_config["port"],
                               protocol_config=CONFIGURATION)

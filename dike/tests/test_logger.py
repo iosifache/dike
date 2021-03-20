@@ -9,7 +9,7 @@ def test_logged_message(capsys: "Fixture"):
         capsys (Fixture): Capture fixture passed by pytest
     """
     message = "This message will be logged."
-    Logger.log(message, LoggedMessageType.STANDARD)
+    Logger().log(message, LoggedMessageType.STANDARD)
 
     captured = capsys.readouterr()
     assert captured.out == message + "\n", "The logged message is malformated."

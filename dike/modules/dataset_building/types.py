@@ -49,7 +49,7 @@ class AnalyzedFileTypes(Enum):
         }
 
         try:
-            return MAP[extension]
+            return MAP[extension.lower()]
         except KeyError:
             return None
 

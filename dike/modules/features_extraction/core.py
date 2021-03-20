@@ -37,7 +37,6 @@ class ExtractionCore(object):
         """Initialized the ExtractionCore instance."""
         # Read the extractors configuration
         full_config = ConfigurationWorker()
-        print(full_config.get_full_configuration())
         self._configuration = full_config.get_configuration_space(
             ConfigurationSpace.EXTRACTORS)
 

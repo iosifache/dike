@@ -37,6 +37,7 @@ class DataFolderScanner:
     _vt_scan_thread: Thread
     _mutex: Lock
     _stop_scan_threads: bool
+    _scan_parameters: tuple
 
     def __init__(self) -> None:
         """Initializes the DataFolderScanner instance."""
@@ -60,10 +61,11 @@ class DataFolderScanner:
         self._vt_scan_thread = None
         self._mutex = Lock()
         self._stop_scan_threads = False
+        self._scan_parameters = (None, None, None)
 
     def _process_new_samples(self, malware_folder: bool) -> None:
-        Logger.log("Start processing files from the given folder\n",
-                   LoggedMessageType.BEGINNING)
+        Logger().log("Start processing files from the given folder\n",
+                     LoggedMessageType.BEGINNING)
 
         # Open required files
         vt_data_content = None
@@ -121,8 +123,8 @@ class DataFolderScanner:
 
         next_step_write.close()
 
-        Logger.log("")
-        Logger.log(
+        Logger().log("")
+        Logger().log(
             "Successfully dumped {} hashes into file".format(len(filenames)),
             LoggedMessageType.SUCCESS)
 
@@ -133,7 +135,7 @@ class DataFolderScanner:
 
         # Check if the file is empty
         if (len(content) == 0):
-            Logger.log("The given file is empty", LoggedMessageType.FAIL)
+            Logger().log("The given file is empty", LoggedMessageType.FAIL)
             return
 
         # Write all hashes, except the first one
@@ -143,8 +145,8 @@ class DataFolderScanner:
 
         # Process first hash
         hash_file = content[0].rstrip()
-        Logger.log("Hash to be scanned is {}".format(hash_file),
-                   LoggedMessageType.WORK)
+        Logger().log("Hash to be scanned is {}".format(hash_file),
+                     LoggedMessageType.WORK)
 
         try:
 
@@ -165,12 +167,12 @@ class DataFolderScanner:
             output_file.write(csv_row)
             output_file.close()
 
-            Logger.log("The given hash was found in the VirusTotal database",
-                       LoggedMessageType.SUCCESS)
+            Logger().log("The given hash was found in the VirusTotal database",
+                         LoggedMessageType.SUCCESS)
 
         except:
-            Logger.log("The given hash is not tracked by VirusTotal",
-                       LoggedMessageType.FAIL)
+            Logger().log("The given hash is not tracked by VirusTotal",
+                         LoggedMessageType.FAIL)
 
     @staticmethod
     def _get_malice_score(malware_benign_vote_ratio: int, malice_votes: int,
@@ -185,8 +187,8 @@ class DataFolderScanner:
         This can be used in order to forcefully process VirusTotal new tags,
         manually placed into the specific file (for example, after running in
         the Google Cloud Platform the extraction script)."""
-        Logger.log("Start processing new malware labels\n",
-                   LoggedMessageType.BEGINNING)
+        Logger().log("Start processing new malware labels\n",
+                     LoggedMessageType.BEGINNING)
 
         # Read raw tags from file
         vt_data_df = pandas.read_csv(DikeConfig.VT_DATA_FILE)
@@ -204,12 +206,6 @@ class DataFolderScanner:
         columns = ["type", "hash", "malice"]
         columns.extend(malware_families_names)
         labels_df = pandas.DataFrame(columns=columns)
-
-        import tqdm
-
-        progress_bar = tqdm.tqdm(total=len(labels_df))
-
-        progress_bar.display()
 
         # Populate the created data frame
         all_families = []
@@ -238,11 +234,7 @@ class DataFolderScanner:
                 [pandas.Series(new_entry, index=labels_df.columns)],
                 ignore_index=True)
 
-            progress_bar.update(1)
-
-        progress_bar.close()
-
-        Logger.log("")
+        Logger().log("")
 
         # Print all outliers that were not considered into malware families
         # groups
@@ -253,8 +245,8 @@ class DataFolderScanner:
         # Dump data frame to CSV file
         labels_df.to_csv(DikeConfig.MALWARE_LABELS, index=False)
 
-        Logger.log("Successfully dumped labels to file",
-                   LoggedMessageType.SUCCESS)
+        Logger().log("Successfully dumped labels to file",
+                     LoggedMessageType.SUCCESS)
 
     def _continuous_folder_watch(self, malware_folder: bool,
                                  sleep_in_seconds: int) -> None:
@@ -304,6 +296,8 @@ class DataFolderScanner:
                 malware folder scanning and useful to respect the quota of the
                 used account
         """
+        self._stop_scan_threads = False
+
         self._folder_watch_thread = Thread(
             target=self._continuous_folder_watch,
             args=(malware_folder, folder_watch_interval))
@@ -314,11 +308,25 @@ class DataFolderScanner:
                                           args=(vt_scan_interval, ))
             self._vt_scan_thread.start()
 
-        Logger.log("Starting the scan of data folder",
-                   LoggedMessageType.BEGINNING)
+        self._scan_parameters = (malware_folder, folder_watch_interval,
+                                 vt_scan_interval)
+
+        Logger().log("Starting the scan of data folder",
+                     LoggedMessageType.BEGINNING)
+
+    def is_scanning_active(self) -> tuple:
+        """Checks if a folder scanning is active.
+
+        Returns:
+            tuple: Tuple containing on the first element a boolean indicating if
+                the scanning is active. If it is set, then the second element in
+                the tuple will be the scan parameters.
+        """
+        return (self._stop_scan_threads, self._scan_parameters)
 
     def stop_scanning(self) -> None:
         """Stops the continuous scanning, previously started."""
         self._stop_scan_threads = True
+        self._scan_parameters = (None, None, None)
 
-        Logger.log("Stopping the scan of data folder", LoggedMessageType.END)
+        Logger().log("Stopping the scan of data folder", LoggedMessageType.END)
