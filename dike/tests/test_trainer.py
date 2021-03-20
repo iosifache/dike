@@ -1,4 +1,4 @@
-"""Program testing the management of the models via the specific core"""
+"""Program testing the models trainer"""
 import datetime
 import os
 import shutil
@@ -6,8 +6,8 @@ import time
 
 import pytest
 from configuration.dike import DikeConfig
-from modules.models_management.core import ModelsManagementCore
 from modules.models_management.retrain import Retrainer
+from modules.models_management.trainer import Trainer
 from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 from modules.utils.errors import (ModelConfigurationFileNotFoundError,
                                   ModelToLoadNotFoundError)
@@ -75,24 +75,24 @@ def clean_environment_after_tests():
 def test_train_with_nonexistent_model():
     """Tests the failure when an invalid model configuration is given as
     parameter from the training process."""
-    core = ModelsManagementCore()
+    trainer = Trainer()
 
     with pytest.raises(ModelConfigurationFileNotFoundError):
-        core.train("path/to/nonexistent/model.yaml")
+        trainer.train("path/to/nonexistent/model.yaml")
 
 
 def test_model_training():
     """Tests the training, prediction and dumping of a model."""
     # Train and dump a model
-    core = ModelsManagementCore()
-    core.train("tests/files/model.yaml")
+    trainer = Trainer()
+    trainer.train("tests/files/model.yaml")
 
     # Predict using the model
-    pytest.initial_result = core.predict("tests/files/sample.exe")
+    pytest.initial_result = trainer.predict("tests/files/sample.exe")
     assert pytest.initial_result is not None, "The prediction using the model failed."
 
     # Dump the model
-    pytest.model_name = core.dump()
+    pytest.model_name = trainer.dump()
     assert pytest.model_name, "The training of the model failed."
 
 
@@ -100,11 +100,11 @@ def test_prediction_for_nonexistent_file():
     """Tests the loading of a model and the failure of the prediction for a
     non-existent file."""
     # Load the model again
-    core = ModelsManagementCore()
-    core.load(pytest.model_name)
+    trainer = Trainer()
+    trainer.load(pytest.model_name)
 
     # Predict using the model
-    result = core.predict("path/to/nonexistent/sample.exe")
+    result = trainer.predict("path/to/nonexistent/sample.exe")
     assert result == {
         "status": "error"
     }, "The returned status for a non-existent file is invalid."
@@ -112,19 +112,19 @@ def test_prediction_for_nonexistent_file():
 
 def test_loading_of_an_nonexistent_model():
     """Tests the failure of an non-existent model."""
-    core = ModelsManagementCore()
+    trainer = Trainer()
     with pytest.raises(ModelToLoadNotFoundError):
-        core.load("invalid_model_hash")
+        trainer.load("invalid_model_hash")
 
 
 def test_model_loading():
     """Tests the loading and prediction of a model."""
     # Load the model again
-    core = ModelsManagementCore()
-    core.load(pytest.model_name)
+    trainer = Trainer()
+    trainer.load(pytest.model_name)
 
     # Predict using the model
-    result = core.predict("tests/files/sample.exe")
+    result = trainer.predict("tests/files/sample.exe")
     assert result == pytest.initial_result, "The prediction results differs."
 
 

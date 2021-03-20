@@ -13,6 +13,7 @@ class DikeConfig:
 
     ## Data
     DATA_FOLDER = DIKE_FOLDER + "data/"
+    UPLOADED_CONFIGURATIONS_FOLDER = DATA_FOLDER + "configurations/"
     DATASETS_FOLDER = DATA_FOLDER + "datasets/"
     CUSTOM_DATASETS_FOLDER = DATASETS_FOLDER + "custom/"
     FULL_DATASET_FOLDER = DATASETS_FOLDER + "full/"
@@ -73,6 +74,9 @@ class DikeConfig:
 
     # Constants
 
+    # For datasets
+    DATASET_METADATA_LINE_START = "# "
+
     ## For feature extraction
     API_CALLS_REGEX = r"^((\w)+)\("
     VT_ANTIVIRUS_MALWARE_CATEGORIES = ["malicious", "suspicious"]
@@ -118,3 +122,40 @@ class DikeConfig:
         MACHINE_LEARNING = "machine_learning"
         MACHINE_LEARNING_ALGORITHM_ = "algorithm"
         MACHINE_LEARNING_SPLIT_RADIO_ = "split_ratio"
+
+    class CLICommands(Enum):
+        """Class encapsulating the commands from the CLI."""
+        CREATE_CONNECTION = "create_connection"
+        CREATE_CONNECTIONS = "create_connections"
+        REMOVE_CONNECTION = "remove_connection"
+        REMOVE_ALL_CONNECTIONS = "remove_all_connections"
+        LIST_CONNECTIONS = "list_connections"
+
+        GET_LOGS = "get_logs"
+        REMOVE_LOGS = "remove_logs"
+
+        START_DATA_SCAN = "start_data_scan"
+        STOP_DATA_SCAN = "stop_data_scan"
+        LIST_DATA_SCANS = "list_data_scans"
+
+        UPDATE_MALWARE_LABELS = "update_malware_labels"
+        CREATE_DATASET = "create_dataset"
+        LIST_DATASETS = "list_datasets"
+        REMOVE_DATASET = "remove_dataset"
+
+        CREATE_MODEL = "create_model"
+        UPDATE_MODEL = "update_model"
+        LIST_MODELS = "list_models"
+        REMOVE_MODEL = "remove_model"
+
+        START_RETRAINING = "start_retraining"
+        LIST_RETRAININGS = "list_retrainings"
+        STOP_RETRAINING = "stop_retraining"
+
+        CREATE_TICKET = "create_ticket"
+        GET_TICKET = "get_ticket"
+        LIST_TICKETS = "list_tickets"
+        REMOVE_TICKET = "remove_ticket"
+
+        CLEAR = "clear"
+        EXIT = "exit"

@@ -237,7 +237,7 @@ class GroupCounter(Preprocessor):
     @staticmethod
     def _check_wildcards_match(pattern: str, raw_string: str) -> bool:
         pattern = pattern.replace("*", r"(\w)*")
-        return (re.match(pattern, raw_string) is not None)
+        return (re.match(pattern, raw_string.lower()) is not None)
 
     def _print_list_of_outliers(self, elements: typing.List[str],
                                 counter: collections.Counter):
@@ -246,10 +246,11 @@ class GroupCounter(Preprocessor):
             percent = counter[key] / len(elements)
             if (percent > self.min_ignored_percent):
                 if not printed_caption:
-                    Logger.log("Outliers (that are not in any category) are:",
-                               LoggedMessageType.NEW)
+                    Logger().log(
+                        "Outliers (that are not in any category) are:",
+                        LoggedMessageType.NEW)
                     printed_caption = True
-                Logger.log(
+                Logger().log(
                     "\t- {} with {} occurances ({:.3f}% from total)".format(
                         key, counter[key], 100 * percent))
 

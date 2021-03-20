@@ -29,8 +29,8 @@ class VirusTotalRequestError(Error):
 
 
 class FileToExtractFromNotFoundError(Error):
-    """The file given for the extraction process could not be found or
-    opened."""
+    # pylint: disable=line-too-long
+    """The file given for the extraction process could not be found or opened."""
 
 
 class ModelConfigurationFileNotFoundError(Error):
@@ -39,3 +39,20 @@ class ModelConfigurationFileNotFoundError(Error):
 
 class ModelToLoadNotFoundError(Error):
     """The model to load could not be found or opened."""
+
+
+class InvalidConnectionIDError(Error):
+    # pylint: disable=line-too-long
+    """No connection with a subordinate server, identified with this ID, could be found."""
+
+
+class NoFreeServerFoundError(Error):
+    """No free server to whom to delegate a task could be found."""
+
+
+class InvalidNetworkError(Error):
+    "The given network, in CIDR notation, is invalid."
+
+
+class TicketNotFoundError(Error):
+    """The ticket was not found in the session of the server."""

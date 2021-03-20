@@ -33,7 +33,7 @@ def test_dataset_creation():
 
     status = DatasetWorker.create_dataset(AnalyzedFileTypes.PE, 0.9,
                                           9 * [True], 20, 0.5,
-                                          dataset_filename)
+                                          dataset_filename, "")
     assert status is True, "The creation of a dataset returned an invalid result."
 
     # Cleanup
@@ -46,5 +46,5 @@ def test_failed_dataset_creation():
     samples count."""
     status = DatasetWorker.create_dataset(AnalyzedFileTypes.PE, 0.9,
                                           9 * [True], 1000000, 0.5,
-                                          "dataset.csv")
+                                          "dataset.csv", "")
     assert status is False, "The failure of creation of a dataset was not correctly flagged."

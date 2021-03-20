@@ -289,7 +289,7 @@ def main():
 
     # Check arguments
     if not (len(sys.argv) == 2 and os.path.isfile(sys.argv[1])):
-        Logger.log("Invalid (number of) arguments", LoggedMessageType.FAIL)
+        Logger().log("Invalid (number of) arguments", LoggedMessageType.FAIL)
         exit(1)
 
     # Get parameter

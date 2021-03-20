@@ -89,8 +89,8 @@ class ConfigurationWorker(object):
             except:
                 raise ConfigurationFileNotFoundError()
 
-            Logger.log("Configuration file imported",
-                       LoggedMessageType.SUCCESS)
+            Logger().log("Configuration file imported",
+                         LoggedMessageType.SUCCESS)
 
         return cls._instance
 

@@ -16,7 +16,7 @@ Usage example:
 """
 import typing
 
-from modules.models_management.core import ModelsManagementCore
+from modules.models_management.trainer import Trainer
 from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 from modules.utils.scheduler import ReplicatedDailyScheduler
 from pypattyrn.creational.singleton import Singleton
@@ -27,25 +27,62 @@ class Retrainer(object, metaclass=Singleton):
     _model_names: typing.List[str]
     _scheduler: ReplicatedDailyScheduler
 
-    def retrain_model(self, model_name: str) -> None:
-        """Adds a model to be retrained.
-
-        Args:
-            model_name (str): Name of the model
-        """
+    def __init__(self) -> None:
+        """Initializes the Retrainer instance."""
         self._model_names = []
-        self._model_names.append(model_name)
 
         # Default value of members
         self._scheduler = None
 
+    def retrain_model(self, model_name: str) -> bool:
+        """Adds a model to be retrained.
+
+        Args:
+            model_name (str): Name of the model
+
+        Returns:
+            bool: Boolean indicating if the model was added to the retrain
+        """
+        # Check if the model is already added to the retrain
+        if model_name in self._model_names:
+            return False
+
+        self._model_names.append(model_name)
+        return True
+
+    def get_retrained_models(self) -> typing.List[str]:
+        """Gets the models added to retrain.
+
+        Returns:
+            typing.List[str]: List with retrained models
+        """
+        return self._model_names
+
+    def remove_model(self, model_name: str) -> bool:
+        """Removes a model from the retraining.
+
+        Args:
+            model_name (str): Model name
+
+        Returns:
+            bool: Boolean indicating if the model was removed
+        """
+        if model_name not in self._model_names:
+            return False
+
+        self._model_names = [
+            name for name in self._model_names if name != model_name
+        ]
+
+        return True
+
     @staticmethod
     def _retrain(model_name: str) -> None:
-        core = ModelsManagementCore()
+        trainer = Trainer()
 
-        core.load(model_name)
-        core.retrain()
-        core.dump()
+        trainer.load(model_name)
+        trainer.retrain()
+        trainer.dump()
 
     def start(self):
         """Starts the periodical retraining of models."""

@@ -38,7 +38,7 @@ def main():
     if not (len(sys.argv) == 4 and os.path.isfile(sys.argv[1])
             and os.path.isfile(sys.argv[2])
             and _check_extractors_string(sys.argv[3])):
-        Logger.log("Invalid (number of) arguments", LoggedMessageType.FAIL)
+        Logger().log("Invalid (number of) arguments", LoggedMessageType.FAIL)
         exit(1)
 
     # Get parameters
@@ -69,8 +69,8 @@ def main():
 
     # Squeeze and log attributes
     attributes = master.squeeze()
-    Logger.log("Extracted attributes from file are: \n{}".format(attributes),
-               LoggedMessageType.SUCCESS)
+    Logger().log("Extracted attributes from file are: \n{}".format(attributes),
+                 LoggedMessageType.SUCCESS)
 
 
 if __name__ == "__main__":

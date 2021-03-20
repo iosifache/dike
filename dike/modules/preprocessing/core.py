@@ -33,10 +33,7 @@ from sklearn.preprocessing import Binarizer, KBinsDiscretizer, MinMaxScaler
 
 
 class PreprocessingCore:
-    """Class for preprocessing data by applying preprocessors
-    
-    Requires a loaded configuration.
-    """
+    """Class for preprocessing data by applying preprocessors"""
     _is_loaded: bool
     _extractors_config: typing.Any
     _preprocessors_config: typing.Any
