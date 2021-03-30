@@ -6,8 +6,8 @@ import time
 
 import pytest
 from configuration.dike import DikeConfig
-from modules.models_management.retrain import Retrainer
-from modules.models_management.trainer import Trainer
+from modules.models.retrain import Retrainer
+from modules.models.trainer import Trainer
 from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 from modules.utils.errors import (ModelConfigurationFileNotFoundError,
                                   ModelToLoadNotFoundError)

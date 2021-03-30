@@ -1,0 +1,143 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;700&display=swap");
+
+/* General */
+:root {
+  --peter-river-blue: #3498db;
+  --emerald-dark: #1d6da2;
+  --emerald-green: #2ecc71;
+  --sun-flower-yellow: #f1c40f;
+  --alizarin-red: #e74c3c;
+  --american-river-grey: #636e72;
+  --dracula-orchid-grey: #2d3436;
+  --silver-grey: #bdc3c7;
+  --black: #000;
+  --white: #fff;
+}
+
+* {
+  padding: 0;
+  margin: 0;
+  box-shadow: none !important;
+  outline: 0 !important;
+}
+
+*:focus {
+  outline: 0 !important;
+}
+
+body {
+  font-family: "Roboto Condensed", sans-serif;
+  overflow-y: scroll;
+}
+
+/* Text */
+
+h1 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+h3 {
+  margin-bottom: 20px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+p {
+  margin-bottom: 20px;
+  font-weight: 300;
+  text-align: justify;
+}
+
+/* Tables */
+
+table tr {
+  border-bottom: 1px #000 solid;
+}
+
+table thead tr {
+  border-bottom-width: 3px;
+}
+
+table tbody tr:last-child {
+  border-bottom: none;
+}
+
+table td {
+  font-weight: 300;
+}
+
+/* Buttons */
+
+.btn-dark,
+.btn-dark:hover,
+.btn-dark:focus {
+  border-color: var(--black);
+  background-color: var(--black);
+  color: var(--white);
+  cursor: pointer;
+}
+
+.btn-dark:disabled {
+  pointer-events: none;
+}
+
+.btn-group-toggle .btn,
+.btn-group-toggle .btn:hover {
+  width: 50%;
+  border-color: var(--american-river-grey);
+  background-color: var(--american-river-grey);
+}
+
+.btn-group-toggle .btn:first-child {
+  margin-right: 1px;
+}
+
+.btn-group-toggle .active,
+.btn-group-toggle .active:hover {
+  border-color: var(--black);
+  background-color: var(--black);
+}
+
+*[invalid='1'] {
+  border-color: var(--alizarin-red);
+}
+
+/* Menu */
+
+.menu {
+  margin-bottom: 50px;
+}
+
+.menu .col:nth-child(1) {
+  text-align: left;
+}
+
+.menu .col:nth-child(2) {
+  text-align: right;
+}
+
+.menu .logo {
+  height: 50px;
+  margin-top: 20px;
+}
+
+.menu .action-button {
+  margin-top: 30px;
+  color: var(--black);
+  cursor: pointer;
+  font-size: 30px;
+}
+
+/* Animations */
+
+@keyframes infinite-rotate {
+  0% {
+    -webkit-transform: rotate(0deg);
+  }
+
+  100% {
+    -webkit-transform: rotate(360deg);
+  }
+}

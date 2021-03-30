@@ -1,6 +1,6 @@
 """Program testing feature extraction via the core"""
 import pytest
-from modules.features_extraction.core import ExtractionCore, ExtractorsType
+from modules.features.core import ExtractionCore, ExtractorsType
 from modules.utils.errors import FileToExtractFromNotFoundError
 
 

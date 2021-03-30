@@ -1,0 +1,23 @@
+.Evaluation table {
+  width: 500px;
+}
+
+.Evaluation table tr td:last-child {
+  padding-left: 10px;
+}
+
+.Evaluation .labels-chooser {
+  width: 100%;
+}
+
+.Evaluation .range-slider__wrap {
+  margin-top: 27px;
+}
+
+.Evaluation .range-slider__tooltip {
+  opacity: 0.9;
+}
+
+.Evaluation .badge {
+  margin-left: 10px;
+}

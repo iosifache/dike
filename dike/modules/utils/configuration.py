@@ -13,16 +13,17 @@ import typing
 from enum import Enum
 
 import yaml
-from configuration.dike import DikeConfig
+from configuration.platform import Files
+from modules.utils.errors import (ConfigurationFileNotFoundError,
+                                  ConfigurationKeyNotFoundError)
 from modules.utils.logger import LoggedMessageType, Logger
-from utils.errors import (ConfigurationFileNotFoundError,
-                          ConfigurationKeyNotFoundError)
 
 
 class ConfigurationSpace(Enum):
     """Enumeration for available configuration spaces"""
     MASTER_SERVER = "master_server"
     SUBORDINATE_SERVER = "subordintate_server"
+    PREDICTOR_COLLECTOR_SERVER = "predictor_collector_server"
     EXTRACTORS = "extractors"
     DATASET_BUILDER = "dataset_builder"
     PREPROCESSORS = "preprocessors"
@@ -55,15 +56,15 @@ class ConfigurationWorker(object):
     _filename: str = None
     _config: typing.Any = None
 
-    def __new__(cls, filename: str = DikeConfig.USER_CONFIGURATON_FILE):
+    def __new__(cls, filename: str = Files.USER_CONFIGURATION):
         """Creates a new ConfigurationWorker instance.
 
         Args:
             filename (str, optional): Name of the configuration file. Mentioned
                 ony on the singleton instanciation. Defaults to
-                DikeConfig.USER_CONFIGURATON_FILE, if the configuration was
-                already readed in other part of the program or if the platform's
-                default configuration file should be used.
+                Files.USER_CONFIGURATION, if the configuration was already
+                readed in other part of the program or if the platform's default
+                configuration file should be used.
 
         Raises:
             ConfigurationFileNotFoundError: The configuration file could not be

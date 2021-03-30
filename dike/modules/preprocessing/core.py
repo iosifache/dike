@@ -21,8 +21,8 @@ import joblib
 import numpy as np
 import pandas
 import scipy
-from configuration.dike import DikeConfig
-from modules.features_extraction.types import ExtractorsType
+from configuration.platform import Files, Parameters
+from modules.features.types import ExtractorsType
 from modules.preprocessing.preprocessors import (Counter, CountVectorizer,
                                                  GroupCounter, Identity,
                                                  NGrams, Preprocessor,
@@ -48,7 +48,7 @@ class PreprocessingCore:
         self._extractors_config = configuration_worker.get_configuration_space(
             ConfigurationSpace.EXTRACTORS)
         self._preprocessors_config = \
-            configuration_worker.get_configuration_space(\
+            configuration_worker.get_configuration_space(
                 ConfigurationSpace.PREPROCESSORS)
 
         # Default value of members
@@ -216,14 +216,13 @@ class PreprocessingCore:
         """
         # Dump each preprocessor
         for index, preprocessor in enumerate(self._preprocessors):
-            preprocessor_model_filename = \
-                DikeConfig.TRAINED_MODEL_PREPROCESSOR_MODEL.format(model_name,\
-                    index)
+            preprocessor_model_filename = Files.MODEL_PREPROCESSOR_MODEL_FMT.format(
+                model_name, index)
             joblib.dump(preprocessor, preprocessor_model_filename)
 
         # Dump the scalar
-        filename = DikeConfig.TRAINED_MODEL_PREPROCESSOR_MODEL.format(
-            model_name, DikeConfig.TRAINED_MODEL_SCALAR_MODEL)
+        filename = Files.MODEL_PREPROCESSOR_MODEL_FMT.format(
+            model_name, Parameters.ModelsManagement.Training.SCALAR_MODEL_NAME)
         joblib.dump(self._last_scalar_model, filename)
 
     def load(self, model_name: str, preprocessors_count: int) -> None:
@@ -235,15 +234,14 @@ class PreprocessingCore:
         """
         # Load each preprocessor
         for preprocessor_id in range(preprocessors_count):
-            preprocessor_model_filename = \
-                DikeConfig.TRAINED_MODEL_PREPROCESSOR_MODEL.format(model_name,\
-                    preprocessor_id)
+            preprocessor_model_filename = Files.MODEL_PREPROCESSOR_MODEL_FMT.format(
+                model_name, preprocessor_id)
             self._preprocessors.append(
                 joblib.load(preprocessor_model_filename))
 
         # Dump the scalar
-        scalar_model_filename = DikeConfig.TRAINED_MODEL_PREPROCESSOR_MODEL.format(
-            model_name, DikeConfig.TRAINED_MODEL_SCALAR_MODEL)
+        scalar_model_filename = Files.MODEL_PREPROCESSOR_MODEL_FMT.format(
+            model_name, Parameters.ModelsManagement.Training.SCALAR_MODEL_NAME)
         self._last_scalar_model = joblib.load(scalar_model_filename)
 
         self._is_loaded = True

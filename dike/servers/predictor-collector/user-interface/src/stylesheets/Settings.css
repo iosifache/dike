@@ -1,0 +1,13 @@
+.Settings label {
+  margin-bottom: 0;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.Settings .btn-group {
+  display: block !important;
+}
+
+.Settings .save-button {
+  width: 120px;
+}

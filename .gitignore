@@ -1,32 +1,26 @@
 # Project-specific
 
-## Datasets
-dike/data/datasets/custom/*
-!dike/data/datasets/custom/.gitkeep
-dike/data/datasets/full/*
-!dike/data/datasets/full/benign
-!dike/data/datasets/full/malware
-dike/data/datasets/full/benign/*
-dike/data/datasets/full/malware/*
-!dike/data/datasets/full/benign/.gitkeep
-!dike/data/datasets/full/malware/.gitkeep
-
-## Trained models
-dike/data/trained_models/*
-!dike/data/trained_models/.gitkeep
-
-## Secrets
+## Configuration
 dike/configuration/user/secrets.yaml
 
-## Gidra Project
-dike/servers/subordinate/logs/ghidra/*
-!dike/servers/subordinate/logs/ghidra/.gitkeep
+## Datasets
+dike/data/dataset/files/collected
+dike/data/dataset/labels/custom
+dike/data/dataset/others/malware_hashes.txt
 
-## Logs
-dike/servers/subordinate/logs/qiling/logs/*
-!dike/servers/subordinate/logs/qiling/logs/.gitkeep
-dike/servers/subordinate/logs/qiling/rootfs/*
-!dike/servers/subordinate/logs/qiling/rootfs/.gitkeep
+## Models
+dike/data/models/*
+!dike/data/models/.gitkeep
+
+## Gidra
+dike/servers/subordinate/data/ghidra/*
+!dike/servers/subordinate/data/ghidra/.gitkeep
+
+## Qiling
+dike/servers/subordinate/data/qiling/logs/*
+!dike/servers/subordinate/data/qiling/logs/.gitkeep
+dike/servers/subordinate/data/qiling/rootfs/*
+!dike/servers/subordinate/data/qiling/rootfs/.gitkeep
 
 ## Notes
 NOTES.md
@@ -127,7 +121,7 @@ ipython_config.py
 ##   However, in case of collaboration, if having platform-specific dependencies or dependencies
 ##   having no cross-platform support, pipenv may install dependencies that don't work, or not
 ##   install all needed dependencies.
-##Pipfile.lock
+## Pipfile.lock
 
 ## PEP 582; used by e.g. github.com/David-OConnor/pyflow
 __pypackages__/
@@ -166,3 +160,26 @@ dmypy.json
 
 ## Pyre type checker
 .pyre/
+
+# Node-specific
+
+## Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+## Testing
+coverage/
+
+## Production
+build/
+
+## Misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

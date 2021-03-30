@@ -1,0 +1,3 @@
+[submodule "dike/data/dataset"]
+	path = dike/data/dataset
+	url = https://github.com/iosifache/DikeDataset

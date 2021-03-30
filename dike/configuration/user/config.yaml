@@ -4,11 +4,11 @@ master_server:
     cli:
         banner: |
             \n
-                ▀██   ██  ▀██
-              ▄▄ ██  ▄▄▄   ██  ▄▄    ▄▄▄▄
-            ▄▀  ▀██   ██   ██ ▄▀   ▄█▄▄▄██
-            █▄   ██   ██   ██▀█▄   ██
-            ▀█▄▄▀██▄ ▄██▄ ▄██▄ ██▄  ▀█▄▄▄▀
+                  ██  ██  ██
+               ▄▄ ██  ▄▄  ██  ▄▄   ▄▄▄
+            ▄█▄ ████  ██  ██ ▄▀  ▄█████
+            ██▀ ▀▀██  ██  ██▀█▄  ██
+            ▀███████  ██  ██  ██ ▀█▄▄▄▀
             \n
             Platform for automatic analysis of malicious applications
             using artificial intelligence algorithms
@@ -21,6 +21,11 @@ master_server:
 subordintate_server:
     hostname: 0.0.0.0
     port: 1234
+
+predictor_collector_server:
+    hostname: 0.0.0.0
+    port: 10101
+    is_debug: True
 
 extractors:
     strings:
@@ -61,7 +66,9 @@ preprocessors:
 
 machine_learning:
     default_min_thresholds:
-        malice: 0.5
+        malice:
+            suspect: 0.3
+            malicious: 0.6
         class_membership: 0.2
     retraining:
         stringified_time: "00:00"
