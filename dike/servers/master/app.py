@@ -7,13 +7,15 @@ import typing
 
 import emojis
 import pandas
-from configuration.dike import DikeConfig
+from configuration.platform import Parameters
 from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 from modules.utils.errors import Error
 from modules.utils.logger import LoggedMessageType, Logger
 from riposte import Riposte
 from servers.master.subordinate_leader import SubordinateLeader
 from tabulate import tabulate
+
+MASTER_CONFIG = Parameters.Servers.Master
 
 # Get the configuration
 config = ConfigurationWorker()
@@ -100,7 +102,7 @@ def wrapped_command(start_log: str = None, end_log: str = None):
     return inner_decorator
 
 
-@cli.command(DikeConfig.CLICommands.CREATE_CONNECTION.value)
+@cli.command(MASTER_CONFIG.CLICommands.CREATE_CONNECTION)
 @wrapped_command()
 # pylint: disable=unused-argument
 def create_connection(host: str, port: int, result: bool = None) -> None:
@@ -116,7 +118,7 @@ def create_connection(host: str, port: int, result: bool = None) -> None:
                 LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.CREATE_CONNECTIONS.value)
+@cli.command(MASTER_CONFIG.CLICommands.CREATE_CONNECTIONS)
 @wrapped_command()
 # pylint: disable=unused-argument
 def create_connections(network: str, result: int = None) -> None:
@@ -132,7 +134,7 @@ def create_connections(network: str, result: int = None) -> None:
                 LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.LIST_CONNECTIONS.value)
+@cli.command(MASTER_CONFIG.CLICommands.LIST_CONNECTIONS)
 @wrapped_command()
 # pylint: disable=unused-argument
 def list_connections(result: typing.List[typing.List] = None) -> None:
@@ -151,7 +153,7 @@ def list_connections(result: typing.List[typing.List] = None) -> None:
                 LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.REMOVE_CONNECTION.value)
+@cli.command(MASTER_CONFIG.CLICommands.REMOVE_CONNECTION)
 @wrapped_command()
 # pylint: disable=unused-argument
 def remove_connection(connection_id: int, result: bool = None) -> None:
@@ -167,7 +169,7 @@ def remove_connection(connection_id: int, result: bool = None) -> None:
                 LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.REMOVE_ALL_CONNECTIONS.value)
+@cli.command(MASTER_CONFIG.CLICommands.REMOVE_ALL_CONNECTIONS)
 @wrapped_command()
 # pylint: disable=unused-argument
 def remove_all_connections(result: int = None) -> None:
@@ -182,7 +184,7 @@ def remove_all_connections(result: int = None) -> None:
                          LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.GET_LOGS.value)
+@cli.command(MASTER_CONFIG.CLICommands.GET_LOGS)
 @wrapped_command()
 # pylint: disable=unused-argument
 def get_logs(connection_id: int, result: str = None) -> None:
@@ -200,7 +202,7 @@ def get_logs(connection_id: int, result: str = None) -> None:
                 LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.REMOVE_LOGS.value)
+@cli.command(MASTER_CONFIG.CLICommands.REMOVE_LOGS)
 @wrapped_command()
 # pylint: disable=unused-argument
 def remove_logs(connection_id: int, result: bool = None) -> None:
@@ -215,7 +217,7 @@ def remove_logs(connection_id: int, result: bool = None) -> None:
                 LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.START_DATA_SCAN.value)
+@cli.command(MASTER_CONFIG.CLICommands.START_DATA_SCAN)
 @wrapped_command()
 # pylint: disable=unused-argument
 def start_data_scan(malware_folder: bool,
@@ -233,7 +235,7 @@ def start_data_scan(malware_folder: bool,
                 LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.LIST_DATA_SCANS.value)
+@cli.command(MASTER_CONFIG.CLICommands.LIST_DATA_SCANS)
 @wrapped_command()
 # pylint: disable=unused-argument
 def list_data_scans(result: typing.List[typing.List] = None) -> None:
@@ -258,7 +260,7 @@ def list_data_scans(result: typing.List[typing.List] = None) -> None:
                          LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.STOP_DATA_SCAN.value)
+@cli.command(MASTER_CONFIG.CLICommands.STOP_DATA_SCAN)
 @wrapped_command()
 # pylint: disable=unused-argument
 def stop_data_scan(malware_folder: bool,
@@ -276,7 +278,7 @@ def stop_data_scan(malware_folder: bool,
                 LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.UPDATE_MALWARE_LABELS.value)
+@cli.command(MASTER_CONFIG.CLICommands.UPDATE_MALWARE_LABELS)
 @wrapped_command()
 # pylint: disable=unused-argument
 def update_malware_labels(result: bool = None) -> None:
@@ -290,17 +292,10 @@ def update_malware_labels(result: bool = None) -> None:
                          LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.CREATE_DATASET.value)
+@cli.command(MASTER_CONFIG.CLICommands.CREATE_DATASET)
 @wrapped_command()
 # pylint: disable=unused-argument
-def create_dataset(extension: str,
-                   min_malice: float,
-                   desired_categories: typing.List[bool],
-                   enties_count: int,
-                   benign_ratio: float,
-                   output_filename: str,
-                   description: str = "",
-                   result: bool = None) -> None:
+def create_dataset(configuration_filename: str, result: bool = None) -> None:
     """See the SubordinateLeader.create_dataset() method."""
     if result is not None:
         if result:
@@ -311,7 +306,7 @@ def create_dataset(extension: str,
                          LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.LIST_DATASETS.value)
+@cli.command(MASTER_CONFIG.CLICommands.LIST_DATASETS)
 @wrapped_command()
 # pylint: disable=unused-argument
 def list_datasets(result: typing.List[typing.List] = None) -> None:
@@ -352,7 +347,7 @@ def list_datasets(result: typing.List[typing.List] = None) -> None:
                          LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.REMOVE_DATASET.value)
+@cli.command(MASTER_CONFIG.CLICommands.REMOVE_DATASET)
 @wrapped_command()
 # pylint: disable=unused-argument
 def remove_dataset(dataset_filename: str, result: bool = None) -> None:
@@ -365,11 +360,11 @@ def remove_dataset(dataset_filename: str, result: bool = None) -> None:
                          LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.CREATE_MODEL.value)
+@cli.command(MASTER_CONFIG.CLICommands.CREATE_MODEL)
 @wrapped_command()
 # pylint: disable=unused-argument
 def create_model(configuration_filename: str, result: bool = None) -> None:
-    """See the SubordinateLeader.create_modelcreate_model() method."""
+    """See the SubordinateLeader.create_model() method."""
     if result is not None:
         if result:
             Logger().log("The training of the model started.",
@@ -379,7 +374,7 @@ def create_model(configuration_filename: str, result: bool = None) -> None:
                          LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.UPDATE_MODEL.value)
+@cli.command(MASTER_CONFIG.CLICommands.UPDATE_MODEL)
 @wrapped_command()
 # pylint: disable=unused-argument
 def update_model(model_name: str,
@@ -398,7 +393,7 @@ def update_model(model_name: str,
                 LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.LIST_MODELS.value)
+@cli.command(MASTER_CONFIG.CLICommands.LIST_MODELS)
 @wrapped_command()
 # pylint: disable=unused-argument
 def list_models(result: typing.List[typing.List] = None) -> None:
@@ -421,7 +416,7 @@ def list_models(result: typing.List[typing.List] = None) -> None:
                          LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.REMOVE_MODEL.value)
+@cli.command(MASTER_CONFIG.CLICommands.REMOVE_MODEL)
 @wrapped_command()
 # pylint: disable=unused-argument
 def remove_model(model_name: str, result: bool = None) -> None:
@@ -434,7 +429,21 @@ def remove_model(model_name: str, result: bool = None) -> None:
                          LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.START_RETRAINING.value)
+@cli.command(MASTER_CONFIG.CLICommands.CREATE_RETRAINING)
+@wrapped_command()
+# pylint: disable=unused-argument
+def create_retraining(model_name: str, result: bool = None) -> None:
+    """See the SubordinateLeader.start_retraining() method."""
+    if result is not None:
+        if result:
+            Logger().log("The retraining of the model started.",
+                         LoggedMessageType.BEGINNING)
+        else:
+            Logger().log("The retraining of the model could not be started.",
+                         LoggedMessageType.FAIL)
+
+
+@cli.command(MASTER_CONFIG.CLICommands.START_RETRAINING)
 @wrapped_command()
 # pylint: disable=unused-argument
 def start_retraining(model_name: str, result: bool = None) -> None:
@@ -448,16 +457,14 @@ def start_retraining(model_name: str, result: bool = None) -> None:
                          LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.LIST_RETRAININGS.value)
+@cli.command(MASTER_CONFIG.CLICommands.LIST_RETRAININGS)
 @wrapped_command()
 # pylint: disable=unused-argument
 def list_retrainings(result: typing.List[typing.List] = None) -> None:
     """See the SubordinateLeader.list_retrainings() method."""
     if result is not None:
         if (len(result) != 0):
-            result = [[name] for name in result]
-
-            header = ["Name"]
+            header = ["Model Name", "Connection ID"]
             table = tabulate(result, headers=header, tablefmt="grid")
 
             Logger().log("The retrained models are:\n\n{}\n".format(table),
@@ -468,7 +475,7 @@ def list_retrainings(result: typing.List[typing.List] = None) -> None:
                 LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.STOP_RETRAINING.value)
+@cli.command(MASTER_CONFIG.CLICommands.STOP_RETRAINING)
 @wrapped_command()
 # pylint: disable=unused-argument
 def stop_retraining(model_name: str,
@@ -483,7 +490,7 @@ def stop_retraining(model_name: str,
                          LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.CREATE_TICKET.value)
+@cli.command(MASTER_CONFIG.CLICommands.CREATE_TICKET)
 @wrapped_command()
 # pylint: disable=unused-argument
 def create_ticket(model_name: str,
@@ -502,7 +509,7 @@ def create_ticket(model_name: str,
                          LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.LIST_TICKETS.value)
+@cli.command(MASTER_CONFIG.CLICommands.LIST_TICKETS)
 @wrapped_command()
 # pylint: disable=unused-argument
 def list_tickets(result: typing.List[typing.List] = None) -> None:
@@ -518,13 +525,13 @@ def list_tickets(result: typing.List[typing.List] = None) -> None:
             Logger().log("No tickets were opened yet.", LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.GET_TICKET.value)
+@cli.command(MASTER_CONFIG.CLICommands.GET_TICKET)
 @wrapped_command()
 # pylint: disable=unused-argument
 def get_ticket(ticket_name: str, result: dict = None) -> None:
     """See the SubordinateLeader.get_ticket() method."""
     if result is not None:
-        if (result and result["status"] == "ok"):
+        if result:
             if "malice" in result.keys():
                 Logger().log(
                     "The predicted malice for the scanned file is: {:.2f}".
@@ -558,7 +565,7 @@ def get_ticket(ticket_name: str, result: dict = None) -> None:
                          LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.REMOVE_TICKET.value)
+@cli.command(MASTER_CONFIG.CLICommands.REMOVE_TICKET)
 @wrapped_command()
 # pylint: disable=unused-argument
 def remove_ticket(ticket_name: str, result: bool = None) -> None:
@@ -572,13 +579,13 @@ def remove_ticket(ticket_name: str, result: bool = None) -> None:
                          LoggedMessageType.FAIL)
 
 
-@cli.command(DikeConfig.CLICommands.CLEAR.value)
+@cli.command(MASTER_CONFIG.CLICommands.CLEAR)
 def clear() -> None:
     """Clears the output of the command-line interface."""
     os.system("cls" if os.name == "nt" else "clear")
 
 
-@cli.command(DikeConfig.CLICommands.EXIT.value)
+@cli.command(MASTER_CONFIG.CLICommands.EXIT)
 # pylint: disable=redefined-builtin
 def exit() -> None:
     """Exits the command-line interface."""

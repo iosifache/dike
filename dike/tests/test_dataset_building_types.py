@@ -1,7 +1,7 @@
 """Program testing the types defined for dataset building purposes"""
 import math
 
-from modules.dataset_building.types import AnalyzedFileTypes
+from modules.dataset.types import AnalyzedFileTypes
 
 
 def test_conversion_from_valid_extension_to_type():

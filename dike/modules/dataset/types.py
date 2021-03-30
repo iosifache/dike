@@ -1,0 +1,105 @@
+"""Module defining analyzed file types
+
+Usage example:
+
+    file_type = AnalyzedFileTypes.PE
+    file_type = AnalyzedFileTypes.map_extension_to_type("exe")
+    file_type = AnalyzedFileTypes.map_id_to_type(0)
+"""
+from __future__ import annotations
+
+from enum import Enum
+
+
+class AnalyzedFileTypes(Enum):
+    """Enumeration for all possible types of an analyzed file"""
+    class PE:
+        """Enumeration containing details about PE files"""
+        ID = 0
+        EXTENSION = "exe"
+
+    class OLE:
+        """Enumeration containing details about OLE files"""
+        ID = 1
+        EXTENSION = "ole"
+
+    class FEATURES:
+        """Enumeration containing details about files containing serialization
+        of extracted features"""
+        ID = 2
+        EXTENSION = "ftr"
+
+    @staticmethod
+    def map_extension_to_type(
+            filename_or_extension: str) -> "AnalyzedFileTypes":
+        """Maps an extension to its AnalyzedFileTypes parent class.
+
+        Args:
+            extension [str]: Extension to map or filename
+
+        Returns:
+            AnalyzedFileTypes: Corresponding AnalyzedFileTypes class or, if
+                there is not an mapping defined for this extension, None
+        """
+        # Extract the extension if it isn't already extracted
+        if ("." in filename_or_extension):
+            extension = filename_or_extension.split(".")[-1]
+        else:
+            extension = filename_or_extension
+
+        MAP = {
+            "exe": AnalyzedFileTypes.PE,
+            "ole": AnalyzedFileTypes.OLE,
+            "doc": AnalyzedFileTypes.OLE,
+            "docx": AnalyzedFileTypes.OLE,
+            "docm": AnalyzedFileTypes.OLE,
+            "xls": AnalyzedFileTypes.OLE,
+            "xlsx": AnalyzedFileTypes.OLE,
+            "xlsm": AnalyzedFileTypes.OLE,
+            "ppt": AnalyzedFileTypes.OLE,
+            "pptx": AnalyzedFileTypes.OLE,
+            "pptm": AnalyzedFileTypes.OLE,
+            "ftr": AnalyzedFileTypes.FEATURES
+        }
+
+        try:
+            return MAP[extension.lower()]
+        except KeyError:
+            return None
+
+    @staticmethod
+    def map_id_to_type(type_id: int) -> "AnalyzedFileTypes":
+        """Maps an identifier number to its AnalyzedFileTypes parent class.
+
+        Args:
+            type_id [int]: Identifier number
+
+        Returns:
+            AnalyzedFileTypes: Corresponding AnalyzedFileTypes class or, if
+                there is not an mapping defined for this extension, None
+        """
+        for child in AnalyzedFileTypes:
+            if (child.value.ID == type_id):
+                return child
+
+        return None
+
+    @staticmethod
+    def has_valid_extension(filename: str) -> bool:
+        """Checks if the filename has a known extension.
+
+        Args:
+            filename (str): Name of the file
+
+        Returns:
+            bool: Boolean indicating if the filename has a known extenion
+        """
+        # Check if the filename has an extension
+        if ("." not in filename):
+            return False
+
+        # Check if the extension is kwown
+        if not AnalyzedFileTypes.map_extension_to_type(filename):
+            return False
+
+        return True

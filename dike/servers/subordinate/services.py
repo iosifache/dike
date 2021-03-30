@@ -13,10 +13,10 @@ import typing
 from threading import Lock, Thread
 
 import rpyc
-from modules.dataset_building.data_folder_scanner import DataFolderScanner
-from modules.dataset_building.dataset_worker import DatasetWorker
-from modules.dataset_building.types import AnalyzedFileTypes
-from modules.models_management.core import ModelsManagementCore
+from modules.dataset.data_folder_scanner import DataFolderScanner
+from modules.dataset.dataset_worker import DatasetWorker
+from modules.dataset.types import AnalyzedFileTypes
+from modules.models.core import ModelsManagementCore
 from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 from modules.utils.errors import Error
 from modules.utils.logger import LoggedMessageType, Logger
@@ -158,21 +158,21 @@ class SubordinateService(rpyc.Service, metaclass=Singleton):
         return True
 
     @wrapped_functionality(employment_state=Employment.CREATING_DATASET)
-    def create_dataset(self,
-                       file_type_id: int,
-                       min_malice: float,
-                       desired_categories: typing.List[bool],
-                       enties_count: int,
-                       benign_ratio: float,
-                       output_filename: str,
-                       description: str = "") -> bool:
+    def create_dataset(self, configuration_content: str) -> bool:
         """See the DatasetWorker.create_dataset() method."""
-        file_type = AnalyzedFileTypes.map_id_to_type(file_type_id)
+        # Create a temporary file containing the configuration
+        temp_configuration = tempfile.NamedTemporaryFile(delete=False)
+        temp_configuration.write(configuration_content)
+        temp_configuration.flush()
+        temp_configuration_filename = temp_configuration.name
 
-        return DatasetWorker.create_dataset(file_type, min_malice,
-                                            desired_categories, enties_count,
-                                            benign_ratio, output_filename,
-                                            description)
+        result = DatasetWorker.create_dataset_from_file(
+            temp_configuration_filename)
+
+        # Remove the temporary file
+        os.remove(temp_configuration_filename)
+
+        return result
 
     @wrapped_functionality()
     def list_datasets(self) -> typing.List[typing.List]:
@@ -235,6 +235,11 @@ class SubordinateService(rpyc.Service, metaclass=Singleton):
         return True
 
     @wrapped_functionality()
+    def create_retraining(self, model_name: str) -> bool:
+        """See the ModelsManagementCore.retrain_model() method."""
+        return self._model_management_core.retrain_model(model_name)
+
+    @wrapped_functionality()
     def start_retraining(self, model_name: str) -> bool:
         """See the ModelsManagementCore.add_model_to_retraining() method."""
         return self._model_management_core.add_model_to_retraining(model_name)
@@ -277,15 +282,10 @@ class SubordinateService(rpyc.Service, metaclass=Singleton):
             temp_sample.flush()
             temp_sample_filename = temp_sample.name
 
-        # Create a new ticket
-        ticket_name = self._model_management_core.create_new_ticket()
-
-        # Create a new thread for prediction and for saving the result
-        prediction_args = (ticket_name, model_name, temp_sample_filename,
-                           features, similarity_analysis, similar_count, True)
-        thread = Thread(target=self._model_management_core.predict_with_model,
-                        args=prediction_args)
-        thread.start()
+        # Start a threaded prediction
+        ticket_name = self._model_management_core.threaded_predict(
+            model_name, temp_sample_filename, features, similarity_analysis,
+            similar_count, True)
 
         return ticket_name
 

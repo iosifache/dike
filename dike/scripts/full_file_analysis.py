@@ -17,8 +17,8 @@ used for file analysis. These letters can be:
 import os
 import sys
 
-import modules.features_extraction.core as extraction_core
-from modules.features_extraction.types import ExtractorsType
+import modules.features.core as extraction_core
+from modules.features.types import ExtractorsType
 from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 from modules.utils.logger import LoggedMessageType, Logger
 

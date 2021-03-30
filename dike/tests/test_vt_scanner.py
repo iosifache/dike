@@ -1,6 +1,6 @@
 """Program testing the scanning using VirusTotal"""
 import pytest
-from modules.dataset_building.vt_scanner import VirusTotalScanner
+from modules.dataset.vt_scanner import VirusTotalScanner
 from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 
 

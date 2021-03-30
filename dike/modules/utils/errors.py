@@ -33,8 +33,20 @@ class FileToExtractFromNotFoundError(Error):
     """The file given for the extraction process could not be found or opened."""
 
 
+class FailedPredictionError(Error):
+    """The prediction could not be finished for the given file."""
+
+
+class DatasetConfigurationFileNotFoundError(Error):
+    """The configuration file of the dataset could not be found or opened."""
+
+
 class ModelConfigurationFileNotFoundError(Error):
     """The configuration file of the model could not be found or opened."""
+
+
+class InvalidFileExtensionError(Error):
+    """The mentioned file extension is invalid."""
 
 
 class ModelToLoadNotFoundError(Error):
@@ -56,3 +68,15 @@ class InvalidNetworkError(Error):
 
 class TicketNotFoundError(Error):
     """The ticket was not found in the session of the server."""
+
+
+class InvalidSimilarCountError(Error):
+    """The similar_count parameter is invalid."""
+
+
+class InvalidSampleTypeError(Error):
+    """The submitted file has a type that is not supported by the platform."""
+
+
+class InvalidSerializedFeaturesError(Error):
+    """The submitted serialized features are invalid."""

@@ -26,6 +26,7 @@ class Endpoint(Enum):
     LIST_MODELS = ("list_models", False)
     REMOVE_MODEL = ("remove_model", False)
 
+    CREATE_RETRAINING = ("create_retraining", True)
     START_RETRAINING = ("start_retraining", False)
     LIST_RETRAININGS = ("list_retrainings", False)
     STOP_RETRAINING = ("stop_retraining", False)

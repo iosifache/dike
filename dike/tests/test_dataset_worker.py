@@ -3,8 +3,8 @@ import os
 
 import pytest
 from configuration.dike import DikeConfig
-from modules.dataset_building.dataset_worker import DatasetWorker
-from modules.dataset_building.types import AnalyzedFileTypes
+from modules.dataset.dataset_worker import DatasetWorker
+from modules.dataset.types import AnalyzedFileTypes
 
 
 @pytest.fixture(autouse=True)

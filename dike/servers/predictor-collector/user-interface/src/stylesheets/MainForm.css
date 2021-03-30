@@ -1,0 +1,93 @@
+.MainForm .particles-background {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: var(--white);
+  -webkit-transition: background-color 1s linear;
+  -ms-transition: background-color 1s linear;
+  transition: background-color 1s linear;
+}
+
+.MainForm .particles-background.benign {
+  background-color: var(--white);
+}
+
+.MainForm .particles-background.suspicious {
+  background-color: var(--white);
+}
+
+.MainForm .particles-background.malicious {
+  background-color: var(--white);
+}
+
+.MainForm > .container {
+  position: relative;
+}
+
+.MainForm .no-configuration {
+  color: var(--alizarin-red) !important;
+}
+
+.MainForm .scan-form {
+  margin-bottom: 20px;
+}
+
+.MainForm .file {
+  width: calc(100% - 120px);
+}
+
+.MainForm .proceed-button,
+.MainForm .proceed-button:hover {
+  width: 100px;
+  height: 37px;
+  border-color: var(--black);
+  margin: 5px 0 0 20px;
+  background-color: var(--black);
+}
+
+.MainForm .scan-form .proceed-button .spin svg {
+  animation: infinite-rotate 2s linear infinite;
+}
+
+.MainForm .scan-results table tr {
+  border-bottom: 1px #000 solid;
+}
+
+.MainForm .scan-results table thead tr {
+  border-bottom-width: 3px;
+}
+
+.MainForm .scan-results table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.MainForm .scan-results table tbody tr.active{
+  background-color: var(--black);
+  color: var(--white);
+}
+
+.MainForm .scan-results table td {
+  font-weight: 300;
+}
+
+.MainForm .publication-form  .file {
+  width: calc(100% - 120px);
+  margin-bottom: 20px;
+}
+
+.MainForm .publication-form  .proceed-button,
+.MainForm .publication-form  .proceed-button:hover {
+  width: 100px;
+  height: 37px;
+  border-color: var(--black);
+  margin: 5px 0 0 20px;
+  background-color: var(--black);
+}
+
+.MainForm .publication-form .membership-input{
+  margin-bottom: 10px;
+}
+
+.MainForm .publication-form .input-group-text{
+  width: 100px;
+}

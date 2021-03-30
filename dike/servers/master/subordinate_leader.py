@@ -6,7 +6,7 @@ import typing
 
 import modules.utils.errors as errors
 import rpyc
-from modules.dataset_building.types import AnalyzedFileTypes
+from modules.dataset.types import AnalyzedFileTypes
 from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 from pypattyrn.creational.singleton import Singleton
 from servers.subordinate.types import Employment, Endpoint
@@ -45,6 +45,7 @@ class SubordinateLeader(object, metaclass=Singleton):
     _stop_needed: bool
     _malware_families: list
     _created_tickets: list
+    _model_retrainings: dict
 
     def __init__(self) -> None:
         """Initializes the SubordinateLeader instance."""
@@ -69,6 +70,7 @@ class SubordinateLeader(object, metaclass=Singleton):
         self._answers = []
         self._stop_needed = False
         self._created_tickets = []
+        self._model_retrainings = dict()
 
         # Create the answer checking thread
         answers_checking_interval = master_config["answers_checking_interval"]
@@ -93,6 +95,15 @@ class SubordinateLeader(object, metaclass=Singleton):
         for connection in self._connections:
             connection.employment = connection.effective_connection.root.get_employment(
             )
+
+    def _refresh_retrainings(self) -> None:
+        self._model_retrainings.clear()
+
+        for connection_id, connection in enumerate(self._connections):
+            models = connection.effective_connection.root.list_retrainings()
+            if models:
+                for model in models:
+                    self._model_retrainings[model] = connection_id
 
     def _get_connection_by_id(self, connection_id: int) -> _Connection:
         if (connection_id < 0 or connection_id >= len(self._connections)):
@@ -313,39 +324,14 @@ class SubordinateLeader(object, metaclass=Singleton):
 
         return result
 
-    def create_dataset(self,
-                       extension: str,
-                       min_malice: float,
-                       desired_categories: str,
-                       entries_count: int,
-                       benign_ratio: float,
-                       output_filename: str,
-                       description: str = "") -> bool:
-        """Creates a new dataset.
+    def create_dataset(self, configuration_filename: str) -> bool:
+        """See the SubordinateService.create_dataset() method."""
+        if not os.path.isfile(configuration_filename):
+            return False
+        configuration_file = open(configuration_filename, "rb")
+        configuration = configuration_file.read()
 
-        Args:
-            desired_categories (str): Comma separated names of the malware
-                families to include in the dataset
-
-        See the SubordinateService.create_dataset() method.
-        """
-        # Preprocess the parameters
-        families = desired_categories.split(",")
-        processed_desired_categories = 9 * [False]
-        for family in families:
-            try:
-                index = self._malware_families.index(family)
-                processed_desired_categories[index] = True
-            except:
-                pass
-        file_type_id = AnalyzedFileTypes.map_extension_to_type(
-            extension).value.ID
-        min_malice = float(min_malice)
-        entries_count = int(entries_count)
-        benign_ratio = float(benign_ratio)
-
-        arguments = (file_type_id, min_malice, processed_desired_categories,
-                     entries_count, benign_ratio, output_filename, description)
+        arguments = (configuration, )
         result = self._delegate_task(Endpoint.CREATE_DATASET, arguments)
 
         return result
@@ -394,8 +380,7 @@ class SubordinateLeader(object, metaclass=Singleton):
         parameter_value = float(parameter_value)
 
         arguments = (model_name, parameter_name, parameter_value)
-        result = self._delegate_task(Endpoint.UPDATE_MODEL,
-                                     arguments)
+        result = self._delegate_task(Endpoint.UPDATE_MODEL, arguments)
 
         return result
 
@@ -406,6 +391,13 @@ class SubordinateLeader(object, metaclass=Singleton):
 
         return result
 
+    def create_retraining(self, model_name: str) -> bool:
+        """See the SubordinateService.start_retraining() method."""
+        arguments = (model_name, )
+        result = self._delegate_task(Endpoint.CREATE_RETRAINING, arguments)
+
+        return result
+
     def start_retraining(self, model_name: str) -> bool:
         """See the SubordinateService.start_retraining() method."""
         arguments = (model_name, )
@@ -413,16 +405,27 @@ class SubordinateLeader(object, metaclass=Singleton):
 
         return result
 
-    def list_retrainings(self) -> typing.List[str]:
+    def list_retrainings(self) -> typing.List[typing.List]:
         """See the SubordinateService.list_retrainings() method."""
-        result = self._delegate_task(Endpoint.LIST_RETRAININGS)
+        self._refresh_retrainings()
+
+        result = []
+        for model_name, connection_id in self._model_retrainings.items():
+            result.append([model_name, connection_id])
 
         return result
 
     def stop_retraining(self, model_name: str) -> bool:
         """See the SubordinateService.stop_retraining() method."""
+        self._refresh_retrainings()
+
+        if (model_name not in self._model_retrainings):
+            return False
+        connection_id = self._model_retrainings[model_name]
+
         arguments = (model_name, )
-        result = self._delegate_task(Endpoint.STOP_RETRAINING, arguments)
+        result = self._delegate_task(Endpoint.STOP_RETRAINING, arguments,
+                                     connection_id)
 
         return result
 

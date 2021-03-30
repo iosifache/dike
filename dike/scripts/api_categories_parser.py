@@ -12,7 +12,7 @@ report-parser.
 import os
 import sys
 
-import modules.features_extraction.extractors as extractors
+import modules.features.extractors as extractors
 import yaml
 from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
 from modules.utils.logger import LoggedMessageType, Logger

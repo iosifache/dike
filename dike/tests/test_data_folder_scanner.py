@@ -5,7 +5,7 @@ import time
 
 import pytest
 from configuration.dike import DikeConfig
-from modules.dataset_building.data_folder_scanner import DataFolderScanner
+from modules.dataset.data_folder_scanner import DataFolderScanner
 from modules.utils.configuration import ConfigurationWorker
 
 
