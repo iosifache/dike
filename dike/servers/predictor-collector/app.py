@@ -1,38 +1,44 @@
 #!/usr/bin/env python3
-"""Script running dike's software for prediction servers on this machine"""
+"""Prediction server main script.
 
+Usage:
+    ./app.py
+"""
 import os
-import pickle
+import pickle  # nosec
 import tempfile
+from threading import Thread
 
-import modules.utils.errors as errors
-from configuration.platform import Files, Parameters
+import servers.errors as errors
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+from modules.configuration.folder_structure import Files
+from modules.configuration.parameters import Servers
 from modules.dataset.types import AnalyzedFileTypes
 from modules.models.core import ModelsManagementCore
-from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
+from modules.models.errors import ModelToLoadNotFoundError
+from modules.utils.configuration_manager import ConfigurationManager
+from modules.utils.types import ConfigurationSpaces
 
-STATUSES = Parameters.Servers.PredictorCollector.Statuses
+ROUTES = Servers.PredictorCollector.Routes
+STATUSES = Servers.PredictorCollector.Statuses
 
-# Global variables
+# The variables are global, not constants. pylint: disable=invalid-name
 malware_families = []
 
-# Create the Flask app
 app = Flask(__name__)
 CORS(app)
 
-# Create the models core
 model_management_core = ModelsManagementCore()
 
 
 def create_success_response(response_dict: dict = None) -> str:
-    """Creates a success response.
+    """Creates a successful response.
 
     Args:
-        response_dict (dict, optional): Dictionary on which the status is added
-            to build the response. Defaults to None, when only the status will
-            be returned.
+        response_dict (dict): Dictionary on which the status is added to build
+            the response. Defaults to None, when only the status will be
+            returned.
 
     Returns:
         str: JSON success response
@@ -68,7 +74,7 @@ def create_error_response(error: errors.Error) -> str:
     return jsonify(error_result)
 
 
-@app.route("/")
+@app.route(ROUTES.DEFAULT)
 def default_route() -> str:
     """Checks the availability of the API.
 
@@ -78,7 +84,7 @@ def default_route() -> str:
     return create_success_response()
 
 
-@app.route("/get_malware_families", methods=["GET"])
+@app.route(ROUTES.GET_MALWARE_FAMILIES, methods=["GET"])
 def get_malware_families_route() -> str:
     """Gets a list of malware families used in the platform.
 
@@ -90,12 +96,16 @@ def get_malware_families_route() -> str:
     return create_success_response(families)
 
 
-@app.route("/get_evaluation/<string:model_name>", methods=["GET"])
+@app.route(ROUTES.GET_EVALUATION + "/<string:model_name>", methods=["GET"])
 def get_evaluation_route(model_name: str) -> str:
     """Gets the evaluation file of a model.
 
     Args:
         model_name (str): Name of the model
+
+    Raises:
+        ModelToLoadNotFoundError: The model to load could not be found or
+            opened.
 
     Returns:
         str: Evaluation file
@@ -106,17 +116,21 @@ def get_evaluation_route(model_name: str) -> str:
             return send_from_directory(os.path.dirname(full_filename),
                                        os.path.basename(full_filename))
 
-        raise errors.ModelToLoadNotFoundError()
+        raise ModelToLoadNotFoundError()
     except errors.Error as error:
         return create_error_response(error)
 
 
-@app.route("/get_configuration/<string:model_name>", methods=["GET"])
+@app.route(ROUTES.GET_CONFIGURATION + "/<string:model_name>", methods=["GET"])
 def get_configuration_route(model_name: str) -> str:
     """Gets the prediction configuration file of a model.
 
     Args:
         model_name (str): Name of the model
+
+    Raises:
+        ModelToLoadNotFoundError: The model to load could not be found or
+            opened.
 
     Returns:
         str: Evaluation file
@@ -128,17 +142,25 @@ def get_configuration_route(model_name: str) -> str:
             return send_from_directory(os.path.dirname(full_filename),
                                        os.path.basename(full_filename))
 
-        raise errors.ModelToLoadNotFoundError()
+        raise ModelToLoadNotFoundError()
     except errors.Error as error:
         return create_error_response(error)
 
 
-@app.route("/create_ticket/<string:model_name>", methods=["POST"])
+@app.route(ROUTES.CREATE_TICKET + "/<string:model_name>", methods=["POST"])
 def create_ticket_route(model_name: str) -> str:
     """Predicts the objective value from the given file or features.
 
     Args:
         model_name (str): Model name
+
+    Raises:
+        InvalidSimilarCountError: The similar_count parameter is invalid.
+        InvalidSampleTypeError: The submitted file has a type that is not
+            supported by the platform.
+        InvalidSerializedFeaturesError: The submitted serialized features are
+            invalid.
+        NoSampleToScanError: No sample to scan was provided.
 
     Returns:
         str: JSON encapsulating the status and the ticket name
@@ -150,7 +172,7 @@ def create_ticket_route(model_name: str) -> str:
                                                default=0)
         if similarity_analysis:
             similar_count = request.form.get("similars_count", type=int)
-            if (similar_count == 0):
+            if similar_count == 0:
                 raise errors.InvalidSimilarCountError()
         else:
             similar_count = 0
@@ -173,15 +195,23 @@ def create_ticket_route(model_name: str) -> str:
             # Get the features
             features = request.form["features"]
             try:
-                features = pickle.loads(features.encode("utf-8"))
-            except:
+                features = pickle.loads(features.encode("utf-8"))  # nosec
+            except Exception:
                 raise errors.InvalidSerializedFeaturesError()
 
             prediction_args = (model_name, None, features, similarity_analysis,
                                similar_count)
+        else:
+            raise errors.NoSampleToScanError()
 
-        # Start a new threaded prediction
-        ticket_name = model_management_core.threaded_predict(*prediction_args)
+        # Create a new ticket
+        ticket_name = model_management_core.create_ticket()
+
+        # Create a new thread for prediction
+        prediction_args = (ticket_name, ) + prediction_args
+        thread = Thread(target=model_management_core.predict_synchronously,
+                        args=prediction_args)
+        thread.start()
 
         return create_success_response({"name": ticket_name})
 
@@ -189,7 +219,7 @@ def create_ticket_route(model_name: str) -> str:
         return create_error_response(error)
 
 
-@app.route("/get_ticket/<string:ticket_name>", methods=["GET"])
+@app.route(ROUTES.GET_TICKET + "/<string:ticket_name>", methods=["GET"])
 def get_ticket_route(ticket_name: str) -> str:
     """Gets the content of a ticket.
 
@@ -201,20 +231,27 @@ def get_ticket_route(ticket_name: str) -> str:
     """
     content = model_management_core.get_ticket_content(ticket_name)
 
-    if (content):
+    if content:
         return create_success_response(content)
-    elif (content is None):
+    elif content is None:
         return create_error_response(errors.FailedPredictionError())
     else:
         return create_unfinished_response()
 
 
-@app.route("/publish/<string:model_name>", methods=["POST"])
+@app.route(ROUTES.PUBLISH + "/<string:model_name>", methods=["POST"])
 def publish_route(model_name: str) -> str:
     """Saves a more accurate result of a file scan.
 
     Args:
         model_name (str): Model ID
+
+    Raises:
+        InvalidSampleTypeError: The submitted file has a type that is not
+            supported by the platform.
+        InvalidSerializedFeaturesError: The submitted serialized features are
+            invalid.
+        NoSampleToPublishError: No sample to publish was provided.
 
     Returns:
         str: JSON encapsulating the status
@@ -240,11 +277,13 @@ def publish_route(model_name: str) -> str:
             # Get the features
             features = request.form["features"]
             try:
-                features = pickle.loads(features.encode("utf-8"))
-            except:
+                features = pickle.loads(features.encode("utf-8"))  # nosec
+            except Exception:
                 raise errors.InvalidSerializedFeaturesError()
 
             file_type = AnalyzedFileTypes.FEATURES
+        else:
+            raise errors.NoSampleToPublishError()
 
         # Get the request parameters
         malice = request.form.get("malice", type=float, default=None)
@@ -253,8 +292,9 @@ def publish_route(model_name: str) -> str:
             memberships = [
                 float(memberships) for memberships in memberships.split(",")
             ]
-        model_management_core.publish(model_name, file_type, full_filename,
-                                      features, malice, memberships)
+        model_management_core.publish_prediction(model_name, file_type,
+                                                 full_filename, features,
+                                                 malice, memberships)
 
         return create_success_response()
 
@@ -263,30 +303,34 @@ def publish_route(model_name: str) -> str:
 
 
 def main() -> None:
-    """Main function"""
+    """Main function."""
     # pylint: disable=global-statement
     global malware_families
 
-    # Get the configuration
-    config = ConfigurationWorker()
+    configuration = ConfigurationManager()
 
     # Get the server parameters from the configuration
-    server_config = config.get_configuration_space(
-        ConfigurationSpace.PREDICTOR_COLLECTOR_SERVER)
+    server_config = configuration.get_space(
+        ConfigurationSpaces.PREDICTOR_COLLECTOR_SERVER)
     host = server_config["hostname"]
     port = server_config["port"]
+    is_secure = server_config["is_secure"]
     is_debug = server_config["is_debug"]
 
     # Get the malware families
-    dataset_builder_config = config.get_configuration_space(
-        ConfigurationSpace.DATASET_BUILDER)
+    dataset_builder_config = configuration.get_space(
+        ConfigurationSpaces.DATASET)
     malware_families = [
         str(key).lower()
         for key in dataset_builder_config["malware_families"].keys()
     ]
 
+    ssl_context = None
+    if is_secure:
+        ssl_context = (Files.SSL_CERTIFICATE, Files.SSL_PRIVATE_KEY)
+
     # Run the server
-    app.run(host=host, port=port, debug=is_debug)
+    app.run(host=host, port=port, debug=is_debug, ssl_context=ssl_context)
 
 
 if __name__ == "__main__":

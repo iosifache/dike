@@ -1,5 +1,8 @@
-"""Module defining the classes that encapsulates the extracted features from
-files"""
+"""Carriers encapsulating the extracted features.
+
+As they are dependent on the extraction core, they are not meant to be used as
+independent components.
+"""
 import typing
 
 import capstone
@@ -9,7 +12,7 @@ import qiling.const
 
 
 class SectionCharacteristics(dict):
-    """Class encapsulating details about a section of an executable
+    """Class encapsulating details about a section of an executable.
 
     Attributes:
         name (str): Name of the section
@@ -17,6 +20,7 @@ class SectionCharacteristics(dict):
         raw_size (int): Raw size of the section
         virtual_size (int): Virtual size of the section
     """
+
     name: str
     entropy: float
     raw_size: int
@@ -25,6 +29,8 @@ class SectionCharacteristics(dict):
     def __init__(self, name: str, entropy: float, raw_size: int,
                  virtual_size: int) -> None:
         """Initializes the SectionCharacteristics instance.
+
+        # noqa
         """
         dict.__init__(self,
                       name=name,
@@ -34,16 +40,15 @@ class SectionCharacteristics(dict):
 
 
 class StaticBucket:
-    """Class encapsulating details about an executable, extracted via static
-    analysis
+    """Class encapsulating static analysis details about an executable.
 
     Attributes:
         filename (str): Filename of the executable
         pe_file (pefile.PE): pefile object representing the executable
         size (int): Size of executable, in bytes
         content (bytes): Bytes representing the whole executable
-        disassembler (capstone.Cs): Capstone dissasambler instance, shared by
-            extractors
+        disassembler (capstone.Cs): Capstone disassembler instance, shared by
+            the extractors
         strings (typing.List[str]): List of printable character sequences from
                                     the executable
         sections (typing.List[SectionCharacteristics]): List of
@@ -59,6 +64,7 @@ class StaticBucket:
         apis (typing.List[str]): List of strings representing the names of the
             called Windows API functions names
     """
+
     filename: str
     pe_file: pefile.PE
     size: int
@@ -73,7 +79,7 @@ class StaticBucket:
     apis: typing.List[str]
 
     def __init__(self) -> None:
-        # Default values of members
+        """Initializes the StaticBucket instance."""
         self.filename = None
         self.pe_file = None
         self.size = -1
@@ -89,24 +95,24 @@ class StaticBucket:
 
 
 class DynamicBucket:
-    """Class encapsulating details about an executable, extracted via dynamic
-    analysis
+    """Class encapsulating dynamic analysis details about an executable.
 
     Attributes:
         emulator (qiling.Qiling): Qiling emulator instance, shared by extractors
-        log_file (str): Full path to the logfile of Qiling
+        log_file (str): Full path to the logging file of Qiling
         opcodes (typing.List[str]): List of strings representing the mnemonics
             of the executed opcodes
         apis (typing.List[str]): List of strings representing the names of the
             called Windows API functions names
     """
+
     emulator: qiling.Qiling
     log_file: str
     opcodes: typing.List[str]
     apis: typing.List[str]
 
     def __init__(self) -> None:
-        # Default values of members
+        """Initializes the DynamicBucket instance."""
         self.emulator = None
         self.log_file = None
         self.opcodes = []
@@ -114,31 +120,37 @@ class DynamicBucket:
 
 
 class DirectoryEntry(dict):
-    """Class encapsulating details about an OLE directory entry
+    """Class encapsulating details about an OLE directory entry.
 
     Attributes:
         name (str): Name of the entry
         size (float): Size of the entry
     """
+
     name: str
     size: int
 
     def __init__(self, name: str, size: int) -> None:
+        """Initializes the DirectoryEntry instance.
+
+        # noqa
+        """
         dict.__init__(self, name=name, size=size)
 
 
 class DocumentBucket:
-    """Class encapsulating details about an OLE file, namely files such as
-    Microsoft Word, Powerpoint and Excel
+    """Class encapsulating details about an OLE file.
+
+    The OLE file can be Microsoft Word, Powerpoint, or Excel.
 
     Attributes:
         filename (str): Filename of the document
         header_text (str): Text found in the header of the document, namely in
             fields such as title, subject, authors, keywords and comment
         total_edit_time (int): Document edit time, in seconds
-        pages_count (int): Number of pages in document
-        words_count (int): Number of words in document
-        chars_count (int): Number of characters in document
+        pages_count (int): Number of pages
+        words_count (int): Number of words
+        chars_count (int): Number of characters
         security (int): Number indicating the security level of the document
         creation_time (int): Time of creation of the document, composed by
             the concatenation of year, month, day, hour, minutes and seconds
@@ -147,19 +159,19 @@ class DocumentBucket:
             seconds
         has_suminfo (bool): Boolean indicating if the document has a
             SummaryInformation stream
-        is_encrypted (bool): Boolean indicating if the document in encrypted
+        is_encrypted (bool): Boolean indicating if the document is encrypted
         is_word (bool): Boolean indicating if the document is a Word
         is_excel (bool): Boolean indicating if the document is an Excel
         is_ppt (bool):  Boolean indicating if the document is a Powerpoint
         is_visio (bool): Boolean indicating if the document is a Visio
         has_object_pool (bool): Boolean indicating if the document has an
             ObjectPool stream
-        flash_count (int): Number of Flash objects in document
-        directory_entries (typing.List[DirectoryEntry]): Directory entries in
-            document
-        sectors_count (int): Number of sectors in document
-        macros_code (typing.List[str]): Code of all macros found in document
+        flash_count (int): Number of Flash objects
+        directory_entries (typing.List[DirectoryEntry]): Directory entries
+        sectors_count (int): Number of sectors
+        macros_code (typing.List[str]): Code of all macros found
     """
+
     filename: str = ""
     header_text: typing.List[str] = []
     total_edit_time: int = 0
@@ -182,7 +194,7 @@ class DocumentBucket:
     macros_code: typing.List[str] = []
 
     def __init__(self) -> None:
-        # Default values of members
+        """Initializes the DocumentBucket instance."""
         self.filename = ""
         self.header_text = []
         self.total_edit_time = 0

@@ -1,0 +1,11 @@
+file_extension: exe
+entries_count: 1000
+
+min_malice: 0.8
+desired_families:
+  - backdoor
+  - encrypter
+benign_ratio: 0
+
+output_filename: pe_backdoor_vs_encrypter.csv
+description: Dataset for differentiate between backdoor and encrypter PE samples

@@ -1,6 +1,6 @@
 const CONFIGURATION = {
   api: {
-    baseAddress: 'http://127.0.0.1:10101',
+    baseAddress: 'https://127.0.0.1:3804',
     routes: {
       getMalwareFamilies: 'get_malware_families',
       getEvaluation: 'get_evaluation',
@@ -39,17 +39,6 @@ const CONFIGURATION = {
       },
     },
   },
-  malwareCategories: [
-    'generic',
-    'trojan',
-    'ransomware',
-    'worm',
-    'backdoor',
-    'spyware',
-    'rootkit',
-    'encrypter',
-    'downloader',
-  ],
   decimalsAccuracy: 2,
 };
 

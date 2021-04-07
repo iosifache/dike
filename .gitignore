@@ -1,12 +1,16 @@
 # Project-specific
 
 ## Configuration
-dike/configuration/user/secrets.yaml
+dike/data/configuration/_secrets.yaml
 
 ## Datasets
 dike/data/dataset/files/collected
 dike/data/dataset/labels/custom
 dike/data/dataset/others/malware_hashes.txt
+
+## Keystore
+dike/data/keystore/*
+!dike/data/keystore/.gitkeep
 
 ## Models
 dike/data/models/*

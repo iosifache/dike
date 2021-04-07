@@ -106,7 +106,7 @@ class Settings extends React.Component {
   }
 
   /**
-   * Updates the model configuration field after the receivement.
+   * Updates the model configuration field after the receipt.
    *
    * @param {Object} configuration Model configuration
    * @memberof Settings

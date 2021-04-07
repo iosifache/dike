@@ -1,7 +1,7 @@
 # Services (modify the bind mount if the user is another one)
 services:
-    master:
-        build: master
+    leader:
+        build: leader
         volumes:
             - /home/iosif/dike:/dike
         networks:
@@ -21,8 +21,8 @@ services:
         networks:
             network:
                 ipv4_address: 192.168.0.11
-    prediction:
-        build: prediction
+    predictor-collector:
+        build: predictor-collector
         volumes:
             - /home/iosif/dike:/dike
         networks:

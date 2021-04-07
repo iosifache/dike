@@ -1,14 +1,16 @@
-"""Script for extracting features from OLE file
+"""Script for feature extraction from OLE files.
+
+The script contains functionalities extracted from the dike's modules. It is
+platform-independent (the required classes are already included) and runs
+without other files.
 
 The script is meant to be imported (via pybind11 module, for example). The
-process_file() function will then be used to extract a file features.
+process_file() function will then be used to extract the features of a file.
 
-The functionalities are extracted from the dike's extractors module.
-
-Required modules, that needs to be installed, are:
+Required modules, that need to be installed, are:
 - oletools (used version at the time was 0.56).
 """
-import pickle
+import pickle  # nosec
 import typing
 
 from olefile import OleFileIO
@@ -17,52 +19,18 @@ from oletools.olevba import VBA_Parser
 
 
 class DirectoryEntry(dict):
-    """Class encapsulating details about an OLE directory entry
+    """See the modules/features/carriers.py file."""
 
-    Attributes:
-        name (str): Name of the entry
-        size (float): Size of the entry
-    """
     name: str
     size: int
 
-    def __init__(self, name: str, size: int) -> None:
+    def __init__(self, name: str, size: int) -> None:  # noqa
         dict.__init__(self, name=name, size=size)
 
 
 class DocumentBucket:
-    """Class encapsulating details about an OLE file, namely files such as
-    Microsoft Word, Powerpoint and Excel
+    """See the modules/features/carriers.py file."""
 
-    Attributes:
-        filename (str): Filename of the document
-        header_text (str): Text found in the header of the document, namely in
-            fields such as title, subject, authors, keywords and comment
-        total_edit_time (int): Document edit time, in seconds
-        pages_count (int): Number of pages in document
-        words_count (int): Number of words in document
-        chars_count (int): Number of characters in document
-        security (int): Number indicating the security level of the document
-        creation_time (int): Time of creation of the document, composed by
-            the concatenation of year, month, day, hour, minutes and seconds
-        modification_time (int): Time of the last modification of the document,
-            composed by the concatenation of year, month, day, hour, minutes and
-            seconds
-        has_suminfo (bool): Boolean indicating if the document has a
-            SummaryInformation stream
-        is_encrypted (bool): Boolean indicating if the document in encrypted
-        is_word (bool): Boolean indicating if the document is a Word
-        is_excel (bool): Boolean indicating if the document is an Excel
-        is_ppt (bool):  Boolean indicating if the document is a Powerpoint
-        is_visio (bool): Boolean indicating if the document is a Visio
-        has_object_pool (bool): Boolean indicating if the document has an
-            ObjectPool stream
-        flash_count (int): Number of Flash objects in document
-        directory_entries (typing.List[DirectoryEntry]): Directory entries in
-            document
-        sectors_count (int): Number of sectors in document
-        macros_code (typing.List[str]): Code of all macros found in document
-    """
     filename: str = ""
     header_text: typing.List[str] = []
     total_edit_time: int = 0
@@ -84,8 +52,7 @@ class DocumentBucket:
     sectors_count: int = 0
     macros_code: typing.List[str] = []
 
-    def __init__(self) -> None:
-        # Default values of members
+    def __init__(self) -> None:  # noqa
         self.filename = ""
         self.header_text = []
         self.total_edit_time = 0
@@ -117,7 +84,7 @@ def extract(document_bucket: DocumentBucket) -> None:
     """
     ole = OleFileIO(document_bucket.filename)
 
-    # Metadatas
+    # Metadata
     meta = ole.get_metadata()
     for property_name in meta.SUMMARY_ATTRIBS:
         property_value = getattr(meta, property_name)
@@ -127,15 +94,15 @@ def extract(document_bucket: DocumentBucket) -> None:
                 "last_saved_by"
         ] and property_value):
             document_bucket.header_text.append(property_value.decode("utf-8"))
-        elif (property_name == "total_edit_time"):
+        elif property_name == "total_edit_time":
             document_bucket.total_edit_time = property_value
-        elif (property_name == "num_pages"):
+        elif property_name == "num_pages":
             document_bucket.pages_count = property_value
-        elif (property_name == "num_words"):
+        elif property_name == "num_words":
             document_bucket.words_count = property_value
-        elif (property_name == "num_chars"):
+        elif property_name == "num_chars":
             document_bucket.words_count = property_value
-        elif (property_name == "security"):
+        elif property_name == "security":
             document_bucket.security = property_value
 
     # Timestamps
@@ -155,21 +122,21 @@ def extract(document_bucket: DocumentBucket) -> None:
         indicator_id = indicator.id
         indicator_value = indicator.value
 
-        if (indicator_id == "has_suminfo"):
+        if indicator_id == "has_suminfo":
             document_bucket.has_suminfo = indicator_value
-        elif (indicator_id == "encrypted"):
+        elif indicator_id == "encrypted":
             document_bucket.is_encrypted = indicator_value
-        elif (indicator_id == "word"):
+        elif indicator_id == "word":
             document_bucket.is_word = indicator_value
-        elif (indicator_id == "excel"):
+        elif indicator_id == "excel":
             document_bucket.is_excel = indicator_value
-        elif (indicator_id == "ppt"):
+        elif indicator_id == "ppt":
             document_bucket.is_ppt = indicator_value
-        elif (indicator_id == "visio"):
+        elif indicator_id == "visio":
             document_bucket.is_visio = indicator_value
-        elif (indicator_id == "ObjectPool"):
+        elif indicator_id == "ObjectPool":
             document_bucket.has_object_pool = indicator_value
-        elif (indicator_id == "flash"):
+        elif indicator_id == "flash":
             document_bucket.flash_count = indicator_value
 
     # Directory entries
@@ -189,7 +156,7 @@ def extract(document_bucket: DocumentBucket) -> None:
 
 
 def squeeze(document_bucket: DocumentBucket) -> typing.List[typing.Any]:
-    """Returns the extracted features from bucket.
+    """Returns the extracted features, from the bucket.
 
     Args:
         document_bucket (DocumentBucket): Bucket containing the extracted
@@ -215,6 +182,7 @@ def squeeze(document_bucket: DocumentBucket) -> typing.List[typing.Any]:
 
 def process_file(filename: str) -> str:
     """Extracts the features from a file.
+
     Args:
         filename (str): Filename of an OLE2 file
 

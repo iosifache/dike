@@ -1,46 +1,58 @@
-"""Module implementing VirusTotal scanning functionality
+"""VirusTotal scan.
 
 Usage example:
 
+    # Create a scanner
     scanner = VirusTotalScanner(
         "86708bfb237c723356f50ac8e64889d1b97a9babb281c01bc4cdfa69d2508792")
+
+    # Scan a hash and get the results
     results = scanner.scan(
         "000cb7a0624d52380f164f2c99984e5dde248458f36bfb932dca4e3ed2df69b1")
-
 """
 import re
 import typing
 
 import vt
-from configuration.platform import Parameters
-from modules.utils.errors import VirusTotalRequestError
+from modules.configuration.parameters import Packages
+from modules.dataset.errors import VirusTotalRequestError
 
 
 class FileResults(dict):
-    """Class encapsulating the relevant details of a VirusTotal scan
+    """Class encapsulating the relevant details of a VirusTotal scan.
 
     Attributes:
         benign_votes (int): The number of benign votes from antivirus engines
-        malware_votes (int): The number of malware votes from antivirus
+        malicious_votes (int): The number of malicious votes from antivirus
             engines
         raw_tags (typing.List[str]): List of raw tags, extracted from the
-            detection of each antivirus engine
+            detections of each antivirus engine
     """
+
     benign_votes: int
-    malware_votes: int
+    malicious_votes: int
     raw_tags: typing.List[str]
 
-    def __init__(self, benign_votes: int, malware_votes: int,
+    def __init__(self, benign_votes: int, malicious_votes: int,
                  raw_tags: typing.List[str]) -> None:
-        """Initializes the FileResults instance."""
+        """Initializes the FileResults instance.
+
+        Args:
+            benign_votes (int): Number of votes which considers the file benign
+            malicious_votes (int): Number of votes which considers the file
+                malicious
+            raw_tags (typing.List[str]): Raw tags attributed by the antivirus
+                engines
+        """
         dict.__init__(self,
                       benign_votes=benign_votes,
-                      malware_votes=malware_votes,
+                      malicious_votes=malicious_votes,
                       raw_tags=raw_tags)
 
 
 class VirusTotalScanner:
-    """Class for scanning with VirusTotal a file hash"""
+    """Class for scanning a file hash with VirusTotal."""
+
     _api_client: vt.Client
 
     def __init__(self, api_key: str) -> None:
@@ -65,30 +77,30 @@ class VirusTotalScanner:
             VirusTotalRequestError: The request to VirusTotal API failed.
 
         Returns:
-            FileResults: The results of scanning the hash
+            FileResults: The results of the scan
         """
+        scan_url = "/files/{}".format(file_hash)
         try:
-            file = self._api_client.get_object("/files/{}".format(file_hash))
+            file = self._api_client.get_object(scan_url)
         except Exception:
             raise VirusTotalRequestError()
 
         benign_votes = 0
-        malware_votes = 0
+        malicious_votes = 0
         raw_tags = []
         for vendor in file.last_analysis_results.keys():
-            antivirus_scan = file.last_analysis_results[vendor]
+            vendor_verdict = file.last_analysis_results[vendor]
 
-            # Get votes
-            if (antivirus_scan["category"]
-                    and antivirus_scan["category"] in Parameters.
-                    FeatureExtraction.VirusTotal.ANTIVIRUS_MALWARE_CATEGORIES):
-                malware_votes += 1
+            # Get the vote of the vendor
+            if (vendor_verdict["category"] and vendor_verdict["category"] in
+                    Packages.Features.VirusTotal.ANTIVIRUS_MALWARE_CATEGORIES):
+                malicious_votes += 1
             else:
                 benign_votes += 1
 
-            # Extract tags
-            if (antivirus_scan["result"]):
-                raw_tags.extend(
-                    re.sub(r"[^\w]", " ", antivirus_scan["result"]).split())
+            # Get the raw tags assigned by the vendor
+            tags = vendor_verdict["result"]
+            if tags:
+                raw_tags.extend(re.sub(r"[^\w]", " ", tags).split())
 
-        return FileResults(benign_votes, malware_votes, raw_tags)
+        return FileResults(benign_votes, malicious_votes, raw_tags)

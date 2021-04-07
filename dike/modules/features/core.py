@@ -1,31 +1,36 @@
-"""Module implementing the core used to extract features for files
+"""Core managing the feature extraction.
 
 Usage example:
 
+    # Create a core and attach some extractors
     core = ExtractionCore()
-    core.attach(ExtractorsType.STATIC_STRINGS)
-    raw_features = core.squeeze("path/to/malware.exe")
+    core.attach(ExtractorsTypes.STATIC_STRINGS)
+
+    # Extract the features of a PE file
+    raw_features = core.squeeze("/tmp/malware.exe")
 """
 import os
 import typing
 
 import capstone
 import modules.features.carriers as carriers
+import modules.features.errors as errors
 import modules.features.extractors as extractors
 import pefile
 import qiling
 import qiling.const
-from configuration.platform import Folders, Parameters
+from modules.configuration.folder_structure import Folders
+from modules.configuration.parameters import Packages
 from modules.dataset.types import AnalyzedFileTypes
 from modules.features.ghidra_wrapper import GhidraWrapper
-from modules.features.types import ExtractorsType
-from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
-from modules.utils.errors import FileToExtractFromNotFoundError
+from modules.features.types import ExtractorsTypes
+from modules.utils.configuration_manager import ConfigurationManager
+from modules.utils.types import ConfigurationSpaces
 
 
 class ExtractionCore(object):
-    """Class managing the process of extracting features from file by applying
-    extractors"""
+    """Class managing the process of extracting features from a file."""
+
     _configuration: typing.Any
     _static_bucket: carriers.StaticBucket
     _dynamic_bucket: carriers.DynamicBucket
@@ -34,13 +39,11 @@ class ExtractionCore(object):
     _extractors: typing.List[extractors.Extractor]
 
     def __init__(self) -> None:
-        """Initialized the ExtractionCore instance."""
-        # Read the extractors configuration
-        full_config = ConfigurationWorker()
-        self._configuration = full_config.get_configuration_space(
-            ConfigurationSpace.EXTRACTORS)
+        """Initializes the ExtractionCore instance."""
+        configuration = ConfigurationManager()
+        self._configuration = configuration.get_space(
+            ConfigurationSpaces.FEATURES)
 
-        # Default value of members
         self._static_bucket = None
         self._dynamic_bucket = None
         self._document_bucket = None
@@ -55,16 +58,16 @@ class ExtractionCore(object):
             name (str): Name of the extractor
 
         Returns:
-            extractors.Extractor: Extractor being request. None if the requested
-                extractor does not exists.
+            extractors.Extractor: Extractor being requested. None if the
+                extractor does not exist.
         """
         return getattr(extractors, name, None)
 
-    def attach(self, extractor_type: ExtractorsType) -> None:
-        """Attaches an extractor to the master.
+    def attach(self, extractor_type: ExtractorsTypes) -> None:
+        """Attaches an extractor to the core.
 
         Args:
-            extractor_type (ExtractorsType): Type of the extractor being
+            extractor_type (ExtractorsTypes): Type of the extractor being
                 attached
         """
         extractor = ExtractionCore.load_extractor_by_name(extractor_type.value)
@@ -81,7 +84,7 @@ class ExtractionCore(object):
     @staticmethod
     def _hook_instruction(qiling_instance: qiling.Qiling, address: int,
                           size: int, others: tuple) -> None:
-        # Read current instruction and the parameters
+        # Read the current instruction and its parameters
         instructions = qiling_instance.mem.read(address, size)
         disassembler = others[0]
         list_of_opcodes = others[1]
@@ -93,11 +96,10 @@ class ExtractionCore(object):
     @staticmethod
     def _check_extractor_type(extractor: extractors.Extractor,
                               class_instance: extractors.Extractor) -> bool:
-        return (type(extractor).__name__ == type(class_instance).__name__)
+        return type(extractor).__name__ == type(class_instance).__name__
 
     def squeeze(self, filename: str) -> list:
-        """Returns a list of all features, resulted from the process of applying
-        each extractor.
+        """Returns a list of all extracted features.
 
         The list of returned features varies depending on the attached
         extractors.
@@ -112,11 +114,9 @@ class ExtractionCore(object):
         Returns:
             list: List of extracted features
         """
-        # Check the existence of the file
         if not os.path.isfile(filename):
-            raise FileToExtractFromNotFoundError()
+            raise errors.FileToExtractFromNotFoundError()
 
-        # Create new buckets for data
         self._static_bucket = carriers.StaticBucket()
         self._dynamic_bucket = carriers.DynamicBucket()
         self._document_bucket = carriers.DocumentBucket()
@@ -134,10 +134,9 @@ class ExtractionCore(object):
 
             if ExtractionCore._check_extractor_type(
                     extractor, extractors.StaticStrings()):
-                # Set the configuration
                 extractor.set_configuration(
-                    self._configuration["strings"]["minimum_string_length"],
-                    self._configuration["strings"]["minimum_occurances"])
+                    self._configuration["strings"]["min_string_length"],
+                    self._configuration["strings"]["min_occurrences"])
 
                 content_needed = True
             elif ExtractionCore._check_extractor_type(
@@ -163,13 +162,12 @@ class ExtractionCore(object):
                 emulator_needed = True
                 disassembler_needed = True
 
-            # If needed, set the configuration for APIs
             if apis_present:
                 extractor.set_configuration(
                     self._configuration["apis"]["ignored_prefixes"],
                     self._configuration["apis"]["ignored_suffixes"])
 
-        # Initialize needed elements
+        # Initialize the needed elements
         if content_needed or emulator_needed:
             self._static_bucket.content = open(filename, "rb").read()
         if pe_file_needed:
@@ -191,8 +189,8 @@ class ExtractionCore(object):
             # Set the log file to be processed by the API extractors
             _, basename = os.path.split(filename)
             self._dynamic_bucket.log_file = os.path.join(
-                Folders.QILING_LOGS, basename + "." +
-                Parameters.FeatureExtraction.Qiling.LOG_EXTENSION)
+                Folders.QILING_LOGS,
+                basename + "." + Packages.Features.Qiling.LOG_EXTENSION)
 
             # Check the Qiling rootfs folder and create the emulator
             qiling_rootfs = os.path.join(Folders.QILING_ROOTS, rootfs)
@@ -210,7 +208,7 @@ class ExtractionCore(object):
             self._dynamic_bucket.emulator = emulator
             try:
                 self._dynamic_bucket.emulator.run()
-            except:
+            except Exception:  # nosec
                 pass
         if decompiler_needed:
             result = GhidraWrapper.analyse_file(filename, True, True)
@@ -218,7 +216,7 @@ class ExtractionCore(object):
             self._static_bucket.apis = result[1]
 
         # Save the filename if it is a document
-        if (AnalyzedFileTypes.OLE in self._analyzed_file_types):
+        if AnalyzedFileTypes.OLE in self._analyzed_file_types:
             self._document_bucket.filename = filename
 
         # Apply each extractor

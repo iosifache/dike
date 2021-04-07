@@ -1,0 +1,86 @@
+---
+
+packages:
+    dataset:
+        malware_families: !include _families.yaml
+        malicious_benign_votes_ratio: 2
+        min_ignored_percent: 0.03
+
+    features:
+        strings:
+            min_string_length: 10
+            min_occurrences: 1
+        opcodes:
+            categories: !include _opcodes.yaml
+            allow_multiple_categories: 1
+            verbose: True
+            min_ignored_percent: 0.03
+        apis:
+            categories: !include _apis.yaml
+            ignored_prefixes:
+                - Rtl
+                - Csr
+                - Dbg
+                - Ldr
+                - Nt
+            ignored_suffixes:
+                - Ex
+                - ExEx
+                - A
+                - W
+            allow_multiple_categories: 1
+            verbose: True
+            min_ignored_percent: 0.03
+
+    preprocessing:
+        ngrams:
+            n: 2
+            to_lowercase: True
+            valid_charset: LOWERCASE
+
+    models:
+        training:
+            default_min_thresholds:
+                suspect_malice: 0.3
+                malicious_malice: 0.6
+                family_membership: 0.2
+        retraining:
+            workers_count: 4
+            execution_time : "00:00"
+        prediction:
+            ticket_length: 32
+            loaded_model_lifetime: 60
+            loaded_ticket_lifetime: 60
+            unload_checking_interval: 10
+
+servers:
+    leader:
+        cli:
+            banner: |
+                \n
+                      ██  ██  ██
+                   ▄▄ ██  ▄▄  ██  ▄▄   ▄▄▄
+                ▄█▄ ████  ██  ██ ▄▀  ▄█████
+                ██▀ ▀▀██  ██  ██▀█▄  ██
+                ▀███████  ██  ██  ██ ▀█▄▄▄▀
+                \n
+                Platform for automatic analysis of malicious applications
+                using artificial intelligence algorithms
+            prompt: "dike :wavy_dash: "
+            log_line_prefix: "▒    "
+            max_string_len: 30
+            overflow_replacement: ...
+        is_debug: True
+        answers_checking_interval: 1
+
+    subordinate:
+        hostname: 0.0.0.0
+        port: 3804
+
+    predictor_collector:
+        hostname: 0.0.0.0
+        port: 3804
+        is_secure: True
+        is_debug: True
+
+secrets: !include _secrets.yaml

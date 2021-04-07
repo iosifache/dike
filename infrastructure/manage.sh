@@ -32,8 +32,8 @@ sudo docker-compose -p dike up --detach
 
     # Add alias for running the app from leader container
     echo -e "\n\n# Alias for running dike's app from the leader server\n\
-alias dike=\"sudo docker exec -w /dike/dike/master \
--it dike_master_1 python app.py\"" >> /home/$1/.bashrc
+alias dike=\"sudo docker exec -w /dike/dike/leader \
+-it dike_leader_1 python app.py\"" >> /home/$1/.bashrc
 
 }
 

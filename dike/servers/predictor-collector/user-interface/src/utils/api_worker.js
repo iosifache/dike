@@ -154,11 +154,11 @@ class APIWorker {
 
           if (status === API_CONFIGURATION.statuses.success) {
             const ticketName = name;
-            const checkingIntervalMiliseconds = 1000 * checkingInterval;
+            const checkingIntervalMilliseconds = 1000 * checkingInterval;
 
             APIWorker.getTicketPeriodically(
               ticketName,
-              checkingIntervalMiliseconds,
+              checkingIntervalMilliseconds,
               callback,
             );
           } else if (status === API_CONFIGURATION.statuses.error) {
@@ -174,7 +174,7 @@ class APIWorker {
    *
    * @static
    * @param {string} ticketName Name of the ticket
-   * @param {Number} interval Interval in miliseconds between two consecutive checks
+   * @param {Number} interval Interval in milliseconds between two consecutive checks
    *     of the scan
    * @param {Function} callback
    * @memberof APIWorker

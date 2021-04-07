@@ -1,21 +1,28 @@
-"""Script for extracting opcodes from an executable
+"""Script for opcodes and API calls extraction using Ghidra.
 
-This script is written in Python 2 due to the constraints of the Ghidra API."""
-
+This script is written in Python 2 due to the constraints of the Ghidra API. It
+is meant to be called from the StaticOpcodes or StaticAPIs extractors, not
+directly from a terminal. The output is printed on stdout.
+"""
 import sys
 
 from ghidra.util.task import TaskMonitor
 
-# Contants (synced with the one from dike.py configuration file)
+# These constants needs to be synced with the parameters set in the platform
+# configuration.
 GHIDRA_ANALYSIS_GLOBAL_NAMESPACE = "Global"
 GHIDRA_ANALYSIS_OPCODES_LINE_START = "OPCODES: "
 GHIDRA_ANALYSIS_APIS_LINE_START = "APIS: "
 GHIDRA_ANALYSIS_ITEMS_DELIMITATOR = ","
 
 
+# Some variables are exported by the Ghidra API and their name should be in the
+# camelcase format. pylint: disable=invalid-name
 def delegate_ghidra(extract_opcodes, extract_api_calls):
-    """Delegates Ghidra to extract opcodes or/and API calls, in a static manner,
-    from the current program under analysis and prints the results on screen.
+    """Delegates Ghidra to extract opcodes or/and API calls.
+
+    The extraction is executed in a static manner, from the current program
+    under analysis and prints the results on the screen.
 
     The features are extracted by walking through the functions of the program
     and inspecting:
@@ -35,14 +42,14 @@ def delegate_ghidra(extract_opcodes, extract_api_calls):
 
     # Get all functions
     # pylint: disable=undefined-variable
-    function_manager = currentProgram.getFunctionManager()
+    function_manager = currentProgram.getFunctionManager()  # noqa
     functions = function_manager.getFunctions(True)
 
-    # Iterate throught functions
+    # Iterate through functions
     opcodes = []
     apis = []
     for function in functions:
-        listing = currentProgram.getListing()
+        listing = currentProgram.getListing()  # noqa
         function_body = function.getBody()
         codeUnits = listing.getCodeUnits(function_body, True)
 
@@ -59,24 +66,23 @@ def delegate_ghidra(extract_opcodes, extract_api_calls):
             for called_function in called_functions:
                 # Save the API name if the parent namespace is not the
                 # global one
-                if (str(called_function.getParentNamespace()) !=
-                        GHIDRA_ANALYSIS_GLOBAL_NAMESPACE):
+                namespace = str(called_function.getParentNamespace())
+                if namespace != GHIDRA_ANALYSIS_GLOBAL_NAMESPACE:
                     apis.append(str(called_function.getName()))
 
-    # Print the extracted information
     if extract_opcodes:
-        print(GHIDRA_ANALYSIS_OPCODES_LINE_START +
-              GHIDRA_ANALYSIS_ITEMS_DELIMITATOR.join(opcodes))
+        opcodes_str = GHIDRA_ANALYSIS_ITEMS_DELIMITATOR.join(opcodes)
+        print(GHIDRA_ANALYSIS_OPCODES_LINE_START + opcodes_str)
     if extract_api_calls:
-        print(GHIDRA_ANALYSIS_APIS_LINE_START +
-              GHIDRA_ANALYSIS_ITEMS_DELIMITATOR.join(apis))
+        apis_str = GHIDRA_ANALYSIS_ITEMS_DELIMITATOR.join(apis)
+        print(GHIDRA_ANALYSIS_APIS_LINE_START + apis_str)
 
 
 def main():
-    """Main function"""
+    """Main function."""
     # pylint: disable=undefined-variable
-    arguments = getScriptArgs()
-    if (len(arguments) != 2):
+    arguments = getScriptArgs()  # noqa
+    if len(arguments) != 2:
         sys.exit(1)
     extract_opcodes = (str(arguments[0]) == "True")
     extract_api_calls = (str(arguments[1]) == "True")
@@ -84,4 +90,5 @@ def main():
     delegate_ghidra(extract_opcodes, extract_api_calls)
 
 
-main()
+if __name__ == "__main__":
+    main()
