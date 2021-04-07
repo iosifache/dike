@@ -1,38 +1,42 @@
 #!/usr/bin/env python3
-"""Script running dike's software for subordinate servers on this machine.
+"""Subordinate server main script.
 
-The scrips uses the user configuration to create a threaded server. This is
-used to wait for and respond to RPC calls from the master.
+Usage:
+    ./app.py
 """
-
-from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
+from modules.configuration.folder_structure import Files
+from modules.utils.configuration_manager import ConfigurationManager
 from modules.utils.logger import Logger
+from modules.utils.types import ConfigurationSpaces
 from rpyc import ThreadPoolServer
-from servers.subordinate.services import SubordinateService
+from rpyc.utils.authenticators import SSLAuthenticator
+from servers.subordinate.services import SubordinationService
 
-# Configuration for RPyC's ThreadPoolServer
-CONFIGURATION = {
+RPYC_CONFIGURATION = {
     "allow_all_attrs": True,
 }
 
 
 def main():
-    """Runs the server."""
-    # Enable the logger and set it for internal buffering
-    Logger().set_enable(enable=True)
+    """Main function."""
+    Logger().enable(is_enabled=True)
     Logger().set_internal_buffering()
 
-    # Get configuration
-    config = ConfigurationWorker()
-    server_config = config.get_configuration_space(
-        ConfigurationSpace.SUBORDINATE_SERVER)
+    configuration = ConfigurationManager()
+    server_config = configuration.get_space(
+        ConfigurationSpaces.SUBORDINATE_SERVER)
+    hostname = server_config["hostname"]
+    port = server_config["port"]
 
-    # Create new service, server and start the server
-    server = ThreadPoolServer(SubordinateService,
-                              hostname=server_config["hostname"],
-                              port=server_config["port"],
-                              protocol_config=CONFIGURATION)
+    authenticator = SSLAuthenticator(Files.SSL_PRIVATE_KEY,
+                                     Files.SSL_CERTIFICATE)
+    server = ThreadPoolServer(SubordinationService,
+                              hostname=hostname,
+                              port=port,
+                              protocol_config=RPYC_CONFIGURATION,
+                              authenticator=authenticator)
     server.start()
 
 
-main()
+if __name__ == "__main__":
+    main()

@@ -1,35 +1,34 @@
-"""Module implementing the evaluation of a model based on the results of its
-predictions
+"""Evaluation of models based on the results of their predictions.
 
 Usage example:
 
-    regression_evaluation = ModelsEvaluator.evaluate_regression(
+    # Evaluate a regression model
+    evaluation = ModelsEvaluator.evaluate_regression(
         [0.14, 0.86, 0.08], [0.1, 0.9, 0.113])
 
-    classification_evaluation = ModelsEvaluator.evaluate_soft_multilabel_classification(
+    # Evaluate a soft multilabel classification model
+    evaluation = ModelsEvaluator.evaluate_soft_multilabel_classification(
         [[0, 1], [1, 0]], [[0.039, 0.984], [0.9, 0.35]], ["benign", "malware"])
 """
 import math
 import typing
 
 import numpy as np
-from configuration.platform import Parameters
+from modules.configuration.parameters import Packages
 from sklearn.metrics import (accuracy_score, confusion_matrix,
                              matthews_corrcoef, max_error, mean_absolute_error,
                              mean_squared_error, precision_score, r2_score,
                              recall_score)
 
-# Get the configuration
-EVALUATION_CONFIG = Parameters.ModelsManagement.Evaluation
+EVALUATION_CONFIG = Packages.Models.Evaluation
 
 
 class ModelsEvaluator:
-    """Class evaluating prediction results
-    """
+    """Class evaluating prediction results."""
+
     @staticmethod
     def evaluate_regression(y_real: np.array, y_pred: np.array) -> dict:
-        """Evaluates the predicted values of a regression model against the real
-        values.
+        """Evaluates a regression model.
 
         The returned metrics, as keys into the returned dictionary, are:
         - maximum error ("max_error" key);
@@ -73,15 +72,14 @@ class ModelsEvaluator:
     def evaluate_soft_multilabel_classification(
             y_real: np.matrix, y_pred: np.matrix,
             label_names: typing.List[str]) -> dict:
-        """Evaluates the predicted values of a soft multilabel classification
-        model against the real values.
+        """Evaluates a soft multilabel classification model.
 
         The soft labels are binaries repeatedly, with different thresholds.
-        Their number is stored into the "sampling_steps" key from the root
+        Their number is stored in the "sampling_steps" key from the root
         object.
 
         Into the "labels" key, there is an entry for each returned label. The
-        label name is stored into the key "label_name". Next to this key, there
+        label name is stored in the key "label_name". Next to this key, there
         are the following metrics:
         - a regression-wise evaluation, following the format of the
         evaluate_regression() method return value;
@@ -124,7 +122,7 @@ class ModelsEvaluator:
             y_label_pred = [sample[label_id] for sample in y_pred]
 
             max_range_value = 1 + 1 / EVALUATION_CONFIG.SAMPLING_STEPS_FOR_PLOTS
-            for threashold in np.arange(
+            for threshold in np.arange(
                     0, max_range_value,
                     1 / EVALUATION_CONFIG.SAMPLING_STEPS_FOR_PLOTS):
                 # Binarize the values considering the current threshold
@@ -132,9 +130,9 @@ class ModelsEvaluator:
                 binarized_y_label_pred = samples_count * [0]
                 for i in range(samples_count):
                     binarized_y_label_test[i] = int(
-                        y_label_test[i] >= threashold)
+                        y_label_test[i] >= threshold)
                     binarized_y_label_pred[i] = int(
-                        y_label_pred[i] >= threashold)
+                        y_label_pred[i] >= threshold)
 
                 # Get numeric metrics
                 labels_confusion_matrixes.append(

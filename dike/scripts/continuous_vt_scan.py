@@ -1,11 +1,12 @@
-"""Script for continuously scan hashes using VirusTotal API
+"""Script for continuous scanning of hashes using VirusTotal API.
+
+The script contains functionalities extracted from the dike's modules. It is
+platform-independent (the required classes are already included) and runs
+without other files.
 
 It needs to be deployed as a Google Cloud Function. It consumes hashes from a
-file on a bucket from Google Cloud Storage, scan them using VirusTotal, and
+file on a bucket from Google Cloud Storage, scans them using VirusTotal, and
 adds a new entry into a CSV file saved in the same bucket.
-
-The script is platform-independent (the required classes are already included)
-and runs without other files from dike.
 
 Environment variables that must be set are:
 - BUCKET_NAME, for the name of the bucket from Google Cloud Storage;
@@ -13,11 +14,10 @@ Environment variables that must be set are:
 - CSV_FILENAME, for the name of the CSV file where results are dumped; and
 - VT_API_KEY, for VirusTotal API key.
 
-Required modules, to be noted in requirements.txt in the Cloud Function are:
+Required modules, to be noted in requirements.txt of the Cloud Function, are:
 - vt_py (used version at the time was 0.6.1); and
 - google-cloud-storage (used version at the time was 1.35.0).
 """
-
 import os
 import re
 import typing
@@ -25,76 +25,77 @@ import typing
 import vt
 from google.cloud import functions, storage
 
-# Contants
 ANTIVIRUSES_MALWARE_CATEGORIES = ["malicious", "suspicious"]
-
-# Get environment variables
 BUCKET_NAME = os.environ["BUCKET_NAME"]
 HASHES_FILENAME = os.environ["HASHES_FILENAME"]
 CSV_FILENAME = os.environ["CSV_FILENAME"]
 VT_API_KEY = os.environ["VT_API_KEY"]
-
-# Get full paths
-TEMP_HASHES_FILENAME = os.path.join("/tmp", HASHES_FILENAME)
-TEMP_CSV_FILENAME = os.path.join("/tmp", CSV_FILENAME)
+TEMP_HASHES_FILENAME = os.path.join("/tmp", HASHES_FILENAME)  # nosec
+TEMP_CSV_FILENAME = os.path.join("/tmp", CSV_FILENAME)  # nosec
 
 
 class FileResults(dict):
-    """Class description found in modules/dataset/vt_scanner.py.
-    """
+    """See the modules/dataset/vt_scanner.py file."""
+
     benign_votes: int
-    malware_votes: int
+    malicious_votes: int
     raw_tags: typing.List[str]
 
-    def __init__(self, benign_votes: int, malware_votes: int,
-                 raw_tags: typing.List[str]) -> None:
+    def __init__(  # noqa
+            self, benign_votes: int, malicious_votes: int,
+            raw_tags: typing.List[str]) -> None:
         dict.__init__(self,
                       benign_votes=benign_votes,
-                      malware_votes=malware_votes,
+                      malicious_votes=malicious_votes,
                       raw_tags=raw_tags)
 
 
 class VirusTotalScanner:
-    """Class description can be found in modules/dataset/vt_scanner.py.
-    """
+    """See the modules/dataset/vt_scanner.py file."""
+
     _api_client: vt.Client
 
-    def __init__(self, api_key: str) -> None:
+    def __init__(self, api_key: str) -> None:  # noqa
         self._api_client = vt.Client(api_key)
 
-    def __del__(self):
+    def __del__(self):  # noqa
         self._api_client.close()
 
-    def scan(self, file_hash: str):
-        """Function description can be found in
-        modules/dataset/vt_scanner.py.
-        """
-        file = self._api_client.get_object("/files/{}".format(file_hash))
+    # pylint: disable=missing-function-docstring
+    def scan(self, file_hash: str) -> FileResults:  # noqa
+        scan_url = "/files/{}".format(file_hash)
+        try:
+            file = self._api_client.get_object(scan_url)
+        except Exception:
+            return None
 
         benign_votes = 0
-        malware_votes = 0
+        malicious_votes = 0
         raw_tags = []
         for vendor in file.last_analysis_results.keys():
-            antivirus_scan = file.last_analysis_results[vendor]
+            vendor_verdict = file.last_analysis_results[vendor]
 
-            # Get votes
-            if (antivirus_scan["category"] and antivirus_scan["category"]
+            # Get the vote of the vendor
+            if (vendor_verdict["category"] and vendor_verdict["category"]
                     in ANTIVIRUSES_MALWARE_CATEGORIES):
-                malware_votes += 1
+                malicious_votes += 1
             else:
                 benign_votes += 1
 
-            # Extract tags
-            if (antivirus_scan["result"]):
-                raw_tags.extend(
-                    re.sub(r"[^\w]", " ", antivirus_scan["result"]).split())
+            # Get the raw tags assigned by the vendor
+            tags = vendor_verdict["result"]
+            if tags:
+                raw_tags.extend(re.sub(r"[^\w]", " ", tags).split())
 
-        return FileResults(benign_votes, malware_votes, raw_tags)
+        return FileResults(benign_votes, malicious_votes, raw_tags)
 
 
 # pylint: disable=unused-argument
 def scan_hashes_automatically(event: dict, context: functions.Context):
-    """Cloud function triggered by a Pub/Sub event
+    """Scans the next file hash.
+
+    This function is implemented as a Cloud Function triggered by a Pub/Sub
+    event.
 
     Args:
         event (dict): Dictionary with data specific to this type of event
@@ -108,7 +109,7 @@ def scan_hashes_automatically(event: dict, context: functions.Context):
     content = content.decode("utf-8").splitlines(True)
 
     # Check if the file is empty
-    if (len(content) == 0):
+    if len(content) == 0:
         return
 
     # Write all hashes, except the first one, to a temporary file, upload it to
@@ -119,10 +120,8 @@ def scan_hashes_automatically(event: dict, context: functions.Context):
     hashes_file_write.upload_from_filename(TEMP_HASHES_FILENAME)
     os.remove(TEMP_HASHES_FILENAME)
 
-    # Get first hash
+    # Scan the first hash with VirusTotal
     file_hash = content[0].rstrip()
-
-    # Scan the given hash with VirusTotal
     client = VirusTotalScanner(VT_API_KEY)
     result = client.scan(file_hash)
 
@@ -131,7 +130,7 @@ def scan_hashes_automatically(event: dict, context: functions.Context):
     content = csv_file_read.download_as_string()
     content = content.decode("utf-8").splitlines(True)
     csv_row = file_hash + "," + str(result["benign_votes"]) + "," + str(
-        result["malware_votes"]) + "," + " ".join(result["raw_tags"]) + "\n"
+        result["malicious_votes"]) + "," + " ".join(result["raw_tags"]) + "\n"
     content.append(csv_row)
 
     # Write to a local file, upload it and delete it after

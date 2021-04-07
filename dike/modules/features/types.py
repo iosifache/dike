@@ -1,9 +1,10 @@
-"""Module defining th types used in the feature extraction functionality"""
+"""Types used in this module."""
 from enum import Enum
 
 
 class FeatureTypes(Enum):
-    """Enumeration for all possible types of an extracted feature"""
+    """Enumeration for all possible types of extracted features."""
+
     BOOLEAN = 0
     INTEGER = 1
     FLOAT = 2
@@ -13,8 +14,9 @@ class FeatureTypes(Enum):
     STRING_ARRAY = 13
 
 
-class ExtractorsType(Enum):
-    """Enumeration for all possible types of an extractors"""
+class ExtractorsTypes(Enum):
+    """Enumeration for all possible types of extractors."""
+
     STATIC_STRINGS = "StaticStrings"
     STATIC_PE_CHARACTERISTICS = "StaticPECharacteristics"
     STATIC_OPCODES = "StaticOpcodes"

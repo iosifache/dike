@@ -1,24 +1,22 @@
 #!/usr/bin/env python3
-"""Script for parsing a mapping Windows API functions - categories and for
-dumping, into a custom format, into a YAML file
-
-Usage:
-    api_categories_parser.py CONFIGURATION_FILE
+"""Script for mapping Windows API functions to their corresponding categories.
 
 API categories and the mapping are defines on the open-source repository
 report-parser.
+
+The script is meant to be run on the terminal. Its output is placed on a YAML
+file, into a custom format.
+
+Usage:
+    ./api_categories_parser.py
 """
-
-import os
-import sys
-
 import modules.features.extractors as extractors
 import yaml
-from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
-from modules.utils.logger import LoggedMessageType, Logger
+from modules.configuration.folder_structure import Files
+from modules.utils.configuration_manager import ConfigurationManager
+from modules.utils.logger import Logger
+from modules.utils.types import ConfigurationSpaces, LoggedMessageTypes
 
-# Constants
-OUTPUT_FILE = "../configuration/api_categories_normalized.yaml"
 CATEGORIES = [
     "Activation Context Reference", "Authentication Functions",
     "Configuration Reference", "Console Functions", "Cryptography Functions",
@@ -34,8 +32,7 @@ CATEGORIES = [
     "Tools, Best Practices, and Guidance", "Using File Mapping",
     "WinINet Functions", "Windows Networking Functions", "Winsock Functions"
 ]
-
-functions = {
+FUNCTIONS = {
     "CertControlStore": "Cryptography Functions",
     "CertOpenStore": "Cryptography Functions",
     "CoCreateInstance": "Functions",
@@ -275,39 +272,29 @@ functions = {
 
 
 class CustomDumper(yaml.Dumper):
-    """Class implemeting a custom YAML dumper
-    """
-    def increase_indent(self, flow=False, indentless=False):
+    """Class implementing a custom YAML dumper."""
+
+    def increase_indent(self, flow=False, indentless=False):  # noqa
         return super(CustomDumper, self).increase_indent(flow, False)
 
 
 def main():
-    """Main function
-    """
+    """Main function."""
     # pylint: disable=global-statement
-    global CATEGORIES, functions
+    functions = FUNCTIONS
 
-    # Check arguments
-    if not (len(sys.argv) == 2 and os.path.isfile(sys.argv[1])):
-        Logger().log("Invalid (number of) arguments", LoggedMessageType.FAIL)
-        exit(1)
-
-    # Get parameter
-    configuration_file = os.path.abspath(sys.argv[1])
-
-    # Read configuration
-    all_config = ConfigurationWorker(configuration_file)
-    config = all_config.get_configuration_space(ConfigurationSpace.EXTRACTORS)
+    configuration = ConfigurationManager()
+    features_config = configuration.get_space(ConfigurationSpaces.FEATURES)
 
     # Create an extractor for API calls to be able to use the normalization
     # method
     api_extractor = extractors.DynamicAPIs()
-    api_extractor.set_configuration(config["apis"]["ignored_prefixes"],
-                                    config["apis"]["ignored_suffixes"])
+    api_extractor.set_configuration(
+        features_config["apis"]["ignored_prefixes"],
+        features_config["apis"]["ignored_suffixes"])
 
     formatted_categories = dict()
     for category in CATEGORIES:
-
         formatted_categories[category] = [
             api_extractor.normalize_function_name(function)
             for function in functions if functions[function] == category
@@ -317,8 +304,12 @@ def main():
             for function in functions if functions[function] != category
         }
 
-    with open(OUTPUT_FILE, "w") as file:
-        file.write(yaml.dump(formatted_categories, Dumper=CustomDumper))
+    with open(Files.API_CATEGORIZATION, "w") as output_file:
+        output_file.write(yaml.dump(formatted_categories, Dumper=CustomDumper))
+
+    Logger(is_enabled=True).log(("The categorization of the Windows API "
+                                 "functions was finished"),
+                                LoggedMessageTypes.SUCCESS)
 
 
 if __name__ == "__main__":

@@ -1,17 +1,20 @@
-"""Module declaring the errors from all other modules
+"""All platform-specific exceptions.
 
 Usage example:
 
+    # Raise and catch an error
     try:
         raise Error()
     except Error as e:
-        print("Error catched!")
+        print("Error caught!")
 """
 
 
 class Error(Exception):
-    """Generic error"""
+    """Generic error."""
+
     def __init__(self) -> None:
+        """Initializes the Error instance."""
         # pylint: disable=bad-super-call
         super(Exception, self).__init__(self.__doc__)
 
@@ -20,63 +23,5 @@ class ConfigurationFileNotFoundError(Error):
     """The configuration file could not be found or opened."""
 
 
-class ConfigurationKeyNotFoundError(Error):
-    """The requested key from the configuration file could not be found."""
-
-
-class VirusTotalRequestError(Error):
-    """The request to VirusTotal API failed."""
-
-
-class FileToExtractFromNotFoundError(Error):
-    # pylint: disable=line-too-long
-    """The file given for the extraction process could not be found or opened."""
-
-
-class FailedPredictionError(Error):
-    """The prediction could not be finished for the given file."""
-
-
-class DatasetConfigurationFileNotFoundError(Error):
-    """The configuration file of the dataset could not be found or opened."""
-
-
-class ModelConfigurationFileNotFoundError(Error):
-    """The configuration file of the model could not be found or opened."""
-
-
-class InvalidFileExtensionError(Error):
-    """The mentioned file extension is invalid."""
-
-
-class ModelToLoadNotFoundError(Error):
-    """The model to load could not be found or opened."""
-
-
-class InvalidConnectionIDError(Error):
-    # pylint: disable=line-too-long
-    """No connection with a subordinate server, identified with this ID, could be found."""
-
-
-class NoFreeServerFoundError(Error):
-    """No free server to whom to delegate a task could be found."""
-
-
-class InvalidNetworkError(Error):
-    "The given network, in CIDR notation, is invalid."
-
-
-class TicketNotFoundError(Error):
-    """The ticket was not found in the session of the server."""
-
-
-class InvalidSimilarCountError(Error):
-    """The similar_count parameter is invalid."""
-
-
-class InvalidSampleTypeError(Error):
-    """The submitted file has a type that is not supported by the platform."""
-
-
-class InvalidSerializedFeaturesError(Error):
-    """The submitted serialized features are invalid."""
+class ConfigurationSpaceNotFoundError(Error):
+    """The requested space from the configuration file could not be found."""

@@ -1,25 +1,25 @@
-"""Module defining the types used by the module management functionality"""
+"""Types used in this module."""
 from enum import Enum
 
 
 class ModelObjective(Enum):
-    """Enumeration for all possible objectives for a model, where similarity is
-    already included in all of them"""
+    """Enumeration for all objectives of a model."""
+
     MALICE = 0
     CLASSIFICATION = 1
 
 
 class ReductionAlgorithm(Enum):
-    """Enumeration for all possible dimensionality reduction algorithms used for
-    training a model"""
+    """Enumeration for all dimensionality reduction algorithms."""
+
     PCA = "PCA"
     FAST_ICA = "FastICA"
     NMF = "NMF"
 
 
 class RegressionAlgorithms(Enum):
-    """Enumeration for all possible regression-based machine learning algorithms
-    used for training a model"""
+    """Enumeration for all regression-based machine learning algorithms."""
+
     LOGISTIC = "LogisticRegression"
     DECISION_TREE = "DecisionTreeRegressor"
     LINEAR_SUPPORT_VECTOR_MACHINE = "LinearSVC"

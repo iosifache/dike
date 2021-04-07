@@ -1,76 +1,62 @@
-"""Module logging information on screen
+"""Logging operations.
 
 Usage example:
 
-    Logger().log("This message will be logged.", LoggedMessageType.NEW_MESSAGE)
+    # Log a message
+    Logger().log("This success message will be logged.",
+        LoggedMessageTypes.SUCCESS)
 """
-from enum import Enum
 from threading import Lock
 
 import emojis
+from modules.utils.types import LoggedMessageTypes
 from pypattyrn.creational.singleton import Singleton
 
 
-class LoggedMessageType(Enum):
-    """Enumeration for message types, each one having a specific emoji attached
-    """
-    STANDARD = ""
-    BEGINNING = ":on:"
-    END = ":end:"
-    WORK = ":hammer:"
-    SUCCESS = ":white_check_mark:"
-    FAIL = ":no_entry_sign:"
-    ERROR = ":boom:"
-    NEW = ":new:"
-    NEW_MESSAGE = ":email:"
-    INFORMATION = ":page_facing_up:"
-    CONNECTIONS = ":link:"
-    QUESTION = ":information_source:"
-
-
 class Logger(metaclass=Singleton):
-    """Class for logging messages (that can contain emojis =) on screen"""
-    _enable: bool
+    """Singleton class for logging messages with emojis on screen."""
+
+    _is_enabled: bool
     _internal_buffering: bool
     _buffer: str
     _mutex: Lock
 
-    def __init__(self, enable: bool = False) -> None:
+    def __init__(self, is_enabled: bool = False) -> None:
         """Initializes the Logger instance.
-        
+
         Args:
-            enable(bool): Boolean indicating if the logger is enabled by
-                creation
+            is_enabled (bool): Boolean indicating if the logger is enabled by
+                the creation
         """
-        # Default values of members
-        self._enable = enable
+        self._is_enabled = is_enabled
         self._internal_buffering = False
         self._buffer = ""
         self._mutex = Lock()
 
-    def set_enable(self, enable: bool) -> None:
-        """Set the enabling of the logger.
+    def enable(self, is_enabled: bool = True) -> None:
+        """Enables (or disables) the logging.
 
         Args:
-            enable (bool): Boolean indicating if the logger is enabled
+            is_enabled (bool): Boolean indicating if the logger is enabled.
+                Defaults to True.
         """
-        self._enable = enable
+        self._is_enabled = is_enabled
 
     def log(self,
             message: str,
-            message_type: LoggedMessageType = LoggedMessageType.STANDARD,
+            message_type: LoggedMessageTypes = LoggedMessageTypes.STANDARD,
             end: str = "\n") -> None:
-        """Logs a message on screen.
+        r"""Logs a message on the screen.
 
         Args:
             message (str): Message text
-            message_type (LoggedMessageType, optional): Message type. Defaults
-                to LoggedMessageType.STANDARD.
-            end (str, optional): String appended at the end of the message.
-                Defaults to "\n".
+            message_type (LoggedMessageTypes): Message type. Defaults to the
+                type of standard message.
+            end (str): String appended at the end of the message. Defaults to
+                "\n".
         """
-        if self._enable:
-            if (message_type != LoggedMessageType.STANDARD):
+        if self._is_enabled:
+            if message_type != LoggedMessageTypes.STANDARD:
                 message = emojis.encode(message_type.value + " " + message)
 
             self._mutex.acquire()
@@ -81,8 +67,7 @@ class Logger(metaclass=Singleton):
             self._mutex.release()
 
     def set_internal_buffering(self) -> None:
-        """Activates the internal buffering of the logger.
-        """
+        """Activates the internal buffering of the logger."""
         self._internal_buffering = True
 
     def get_buffer(self, empty: bool = False) -> str:
@@ -104,5 +89,5 @@ class Logger(metaclass=Singleton):
 
         if self._internal_buffering:
             return content
-        else:
-            return None
+
+        return None

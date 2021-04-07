@@ -43,7 +43,7 @@ const STAGE = {
  */
 class MainForm extends React.Component {
   defaultState = {
-    scanedFileInputPlaceholder: 'Select the file to scan',
+    scannedFileInputPlaceholder: 'Select the file to scan',
     publishedFileInputPlaceholder: 'Select the file to publish',
     selectedFileToScan: null,
     selectedFileToPublish: null,
@@ -73,12 +73,24 @@ class MainForm extends React.Component {
     this.handleMembershipChange = this.handleMembershipChange.bind(this);
     this.goToNextScanStage = this.goToNextScanStage.bind(this);
     this.showScanResult = this.showScanResult.bind(this);
-    this.getPublicationFamiliesTabelBody = this.getPublicationFamiliesTabelBody.bind(
+    this.getPublicationFamiliesTableBody = this.getPublicationFamiliesTableBody.bind(
       this,
     );
     this.goToNextPublicationStage = this.goToNextPublicationStage.bind(this);
 
-    APIWorker.getMalwareFamilies(this.updateMalwareFamilies);
+    const {cookies} = this.props;
+    const malwareFamilies = cookies.get('malwareFamilies');
+    if (malwareFamilies) {
+      this.defaultState.familiesNames = malwareFamilies;
+      this.defaultState.setFamiliesMemberships = Array(
+        malwareFamilies.length,
+      ).fill(0);
+
+      this.state.familiesNames = malwareFamilies;
+      this.state.setFamiliesMemberships = this.defaultState.setFamiliesMemberships;
+    } else {
+      APIWorker.getMalwareFamilies(this.updateMalwareFamilies);
+    }
   }
 
   /**
@@ -90,6 +102,9 @@ class MainForm extends React.Component {
   updateMalwareFamilies(families) {
     this.defaultState.familiesNames = families;
     this.defaultState.setFamiliesMemberships = Array(families.length).fill(0);
+
+    const {cookies} = this.props;
+    cookies.set('malwareFamilies', families);
 
     this.setState({
       familiesNames: families,
@@ -108,7 +123,7 @@ class MainForm extends React.Component {
 
     this.setState({
       selectedFileToScan: file,
-      scanedFileInputPlaceholder: file.name,
+      scannedFileInputPlaceholder: file.name,
     });
   }
 
@@ -224,14 +239,12 @@ class MainForm extends React.Component {
 
         if (membership < 0 || membership > 1) {
           invalidMemberships = true;
-          alert(membership);
           break;
         }
 
         membershipsSum += membership;
       }
       if (membershipsSum != 1 || invalidMemberships) {
-        alert(membershipsSum);
         this.setState({
           invalidField: 1,
         });
@@ -273,12 +286,12 @@ class MainForm extends React.Component {
 
   /**
    * Generates the table used to fill the memberships to malware categories in
-   * the publicatiom step.
+   * the publication step.
    *
    * @return {*} Components
    * @memberof MainForm
    */
-  getPublicationFamiliesTabelBody() {
+  getPublicationFamiliesTableBody() {
     const {familiesNames, setFamiliesMemberships, invalidField} = this.state;
 
     return familiesNames.map((value, index) => {
@@ -309,7 +322,7 @@ class MainForm extends React.Component {
    */
   render() {
     const {
-      scanedFileInputPlaceholder,
+      scannedFileInputPlaceholder,
       publishedFileInputPlaceholder,
       currentStage,
       invalidField,
@@ -447,7 +460,7 @@ class MainForm extends React.Component {
               finishes, the results will be listed above.
             </p>
             <Form.File
-              label={scanedFileInputPlaceholder}
+              label={scannedFileInputPlaceholder}
               size="sm"
               custom
               disabled={!scanConfiguration}
@@ -479,13 +492,13 @@ class MainForm extends React.Component {
 
           {currentStage === STAGE.SHOW_SCAN_RESULTS && (
             <div className="scan-results">
-              {scanResult.malice && (
+              {'malice' in scanResult && (
                 <div>
                   <h3>Malice</h3>
                   {description}
                 </div>
               )}
-              {scanResult.memberships && (
+              {'memberships' in scanResult && (
                 <div>
                   <h3>Membership to Malware Families</h3>
                   <p>
@@ -503,7 +516,7 @@ class MainForm extends React.Component {
                   </Table>
                 </div>
               )}
-              {scanResult.similar && (
+              {'similar' in scanResult && (
                 <div>
                   <h3>Similarity Analysis Results</h3>
                   <p>
@@ -578,7 +591,7 @@ class MainForm extends React.Component {
               <Col>
                 <Form.Group>
                   <Form.Label>Memberships to Malware Families</Form.Label>
-                  {this.getPublicationFamiliesTabelBody()}
+                  {this.getPublicationFamiliesTableBody()}
                   <Form.Text className="text-muted">
                     The memberships to malware families will be used to train
                     the model if it is a soft multi-label classification one.

@@ -1,38 +1,43 @@
-"""Module continuously scanning the benign files and malware folders
+"""Continuously scanning the benign and malware folders.
 
 Usage example:
 
-    data_folder_scanner = DataFolderScanner()
+    # Create a scanner
+    scanner = DataFolderScanner()
 
-    # In case of manual edit of the files
-    data_folder_scanner.update_malware_labels()
+    # In case of manual edit of the malware labels files
+    scanner.update_malware_labels()
 
     # Start the scanning of the malware folder (each 30 minutes, with 20 seconds
     # between two consecutive VirusTotal scans) and of the benign one (each 30
     # minutes). After one hour, stop the scanning.
-    data_folder_scanner.start_scanning(True, 30 * 60, 20)
-    data_folder_scanner.start_scanning(False, 30 * 60)
-    time.sleep(2 * 30 * 60)
-    data_folder_scanner.stop_scanning()
+    scanner.start_scan(True, 30 * 60, 20)
+    scanner.start_scan(False, 30 * 60)
+    time.sleep(60 * 60)
+    scanner.stop_scan()
 """
 import os
 import time
 from threading import Lock, Thread
 
 import pandas
-from configuration.platform import Files, Folders
-from Crypto.Hash import SHA256
+from modules.configuration.folder_structure import Files, Folders
 from modules.dataset.types import AnalyzedFileTypes
 from modules.dataset.vt_scanner import VirusTotalScanner
 from modules.preprocessing.preprocessors import GroupCounter
-from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
-from modules.utils.logger import LoggedMessageType, Logger
+from modules.utils.configuration_manager import ConfigurationManager
+from modules.utils.crypto import HashingEngine
+from modules.utils.logger import Logger
+from modules.utils.types import ConfigurationSpaces, LoggedMessageTypes
 from sklearn import preprocessing
 
 
 class DataFolderScanner:
-    """Class for continuous scanning of folders containing benign files or
-    malware"""
+    """Class for continuous scanning of folders.
+
+    Each instance can scan only one folder at a time.
+    """
+
     _folder_watch_thread: Thread
     _vt_scan_thread: Thread
     _mutex: Lock
@@ -41,33 +46,24 @@ class DataFolderScanner:
 
     def __init__(self) -> None:
         """Initializes the DataFolderScanner instance."""
-        # Read the configuration
-        configuration = ConfigurationWorker()
-        dataset_builder_config = configuration.get_configuration_space(
-            ConfigurationSpace.DATASET_BUILDER)
-        secrets_config = configuration.get_configuration_space(
-            ConfigurationSpace.SECRETS)
+        configuration = ConfigurationManager()
+        dataset_config = configuration.get_space(ConfigurationSpaces.DATASET)
+        secrets_config = configuration.get_space(ConfigurationSpaces.SECRETS)
 
-        # Initialize the members
-        self._vt_api_key = secrets_config["virus_total_api_key"]
-        self._malware_families = dataset_builder_config["malware_families"]
-        self._malware_benign_vote_ratio = dataset_builder_config[
-            "malware_benign_vote_ratio"]
-        self._min_ignored_percent = dataset_builder_config[
-            "min_ignored_percent"]
+        self._malware_families = dataset_config["malware_families"]
+        self._malicious_benign_votes_ratio = dataset_config[
+            "malicious_benign_votes_ratio"]
+        self._min_ignored_percent = dataset_config["min_ignored_percent"]
+        self._vt_api_key = secrets_config["vt_api_key"]
 
-        # Default members values
         self._folder_watch_thread = None
         self._vt_scan_thread = None
         self._mutex = Lock()
-        self._stop_scan_threads = False
+        self._stop_scan_threads = True
         self._scan_parameters = (None, None, None)
 
     def _process_new_samples(self, malware_folder: bool) -> None:
-        Logger().log("Start processing files from the given folder\n",
-                     LoggedMessageType.BEGINNING)
-
-        # Open required files
+        # Open the required files
         vt_data_content = None
         if malware_folder:
             work_dir = Folders.MALICIOUS_FILES
@@ -75,7 +71,6 @@ class DataFolderScanner:
 
             with open(Files.VT_DATA_FILE, "r") as vt_data_read:
                 vt_data_content = vt_data_read.read()
-
         else:
             work_dir = Folders.BENIGN_FILES
             next_step_filename = Files.BENIGN_LABELS
@@ -88,53 +83,53 @@ class DataFolderScanner:
         new_malware = 0
 
         for filename in filenames:
-            # Get extension
             extension = os.path.splitext(filename)[1][1:]
 
-            # Get hash of file
             full_path = os.path.join(work_dir, filename)
-            with open(full_path, "rb") as current_file_read:
-                content = current_file_read.read()
-            file_hash = SHA256.new(data=content).hexdigest()
+            file_hash = HashingEngine.compute_content_sha256(full_path)
 
             # Check if the file is named correctly
             standard_type = AnalyzedFileTypes.map_extension_to_type(extension)
-            standard_full_name = os.path.join(
-                work_dir, file_hash + "." + standard_type.value.EXTENSION)
-            if (full_path != standard_full_name):
+            standard_name = file_hash
+            standard_name += "." + standard_type.value.STANDARD_EXTENSION
+            standard_full_name = os.path.join(work_dir, standard_name)
+            if full_path != standard_full_name:
                 os.rename(full_path, standard_full_name)
 
-            # Continue if the file hash was already tracked or scanned
-            if (file_hash in next_step_content
-                    or (malware_folder and file_hash in vt_data_content)):
+            # Continue if the file hash was already tracked
+            if file_hash in next_step_content:
                 continue
 
-            # Write to file
+            # Continue if the file hash was already scanned
+            if malware_folder and (file_hash in vt_data_content):
+                continue
+
+            # Dump the hash or the corresponding label of the file, depending on
+            # its malice
             if malware_folder:
                 new_malware += 1
                 next_step_write.write(file_hash + "\n")
             else:
-                next_step_write.write(
-                    str(standard_type.value.ID) + "," + file_hash +
-                    (len(self._malware_families) + 1) * ",0" + "\n")
+                new_label_line = str(
+                    standard_type.value.ID) + "," + file_hash + (
+                        len(self._malware_families) + 1) * ",0" + "\n"
+                next_step_write.write(new_label_line)
 
         self.update_malware_labels()
 
         next_step_write.close()
 
-        Logger().log("")
         Logger().log(
-            "Successfully dumped {} hashes into file".format(len(filenames)),
-            LoggedMessageType.SUCCESS)
+            "{} files from the folder were processed.".format(len(filenames)),
+            LoggedMessageTypes.SUCCESS)
 
-    def _scan_file_hash(self) -> None:
+    def _scan_next_hash(self) -> None:
         # Read all hashes from the file
         with open(Files.MALWARE_HASHES, "r") as hash_file_read:
             content = hash_file_read.read().splitlines(True)
 
         # Check if the file is empty
-        if (len(content) == 0):
-            Logger().log("The given file is empty", LoggedMessageType.FAIL)
+        if len(content) == 0:
             return
 
         # Write all hashes, except the first one
@@ -142,63 +137,56 @@ class DataFolderScanner:
         hash_file.writelines(content[1:])
         hash_file.close()
 
-        # Process first hash
-        hash_file = content[0].rstrip()
-        Logger().log("Hash to be scanned is {}".format(hash_file),
-                     LoggedMessageType.WORK)
-
+        # Process the first hash
+        scanned_hash = content[0].rstrip()
         try:
-
             # Scan the given hash with VirusTotal
             client = VirusTotalScanner(self._vt_api_key)
-            result = client.scan(hash_file)
+            result = client.scan(scanned_hash)
 
-            # Dump the result into the CSV file
-            already_exists = os.path.isfile(Files.VT_DATA_FILE)
+            # Dump to the VirusTotal results CSV file
             output_file = open(Files.VT_DATA_FILE, "a")
-            if not already_exists:
-                output_file.write(
-                    "hash,harmless_votes,malicious_votes,raw_tags\n")
-            csv_row = hash_file + "," + str(
-                result["benign_votes"]) + "," + str(
-                    result["malware_votes"]) + "," + " ".join(
-                        result["raw_tags"]) + "\n"
-            output_file.write(csv_row)
+            raw_tags = " ".join(result["raw_tags"])
+            row_data = [
+                scanned_hash,
+                str(result["benign_votes"]),
+                str(result["malicious_votes"]), raw_tags
+            ]
+            row = ",".join(row_data) + "\n"
+            output_file.write(row)
             output_file.close()
 
-            Logger().log("The given hash was found in the VirusTotal database",
-                         LoggedMessageType.SUCCESS)
-
-        except:
-            Logger().log("The given hash is not tracked by VirusTotal",
-                         LoggedMessageType.FAIL)
+            Logger().log(
+                "The hash {} was found in the VirusTotal database.".format(
+                    scanned_hash), LoggedMessageTypes.SUCCESS)
+        except Exception:
+            Logger().log(
+                "The hash {} is not tracked by VirusTotal.".format(
+                    scanned_hash), LoggedMessageTypes.INFORMATION)
 
     @staticmethod
-    def _get_malice_score(malware_benign_vote_ratio: int, malice_votes: int,
-                          harmless_votes: int) -> int:
+    def _compute_malice(malicious_benign_votes_ratio: int, malice_votes: int,
+                        harmless_votes: int) -> int:
         # Compute the weighted average from the antivirus engines votes
-        return (malware_benign_vote_ratio * malice_votes) / (
-            malware_benign_vote_ratio * malice_votes + harmless_votes)
+        return (malicious_benign_votes_ratio * malice_votes) / (
+            malicious_benign_votes_ratio * malice_votes + harmless_votes)
 
     def update_malware_labels(self) -> None:
         """Updates the labels of the malware.
 
         This can be used in order to forcefully process VirusTotal new tags,
         manually placed into the specific file (for example, after running in
-        the Google Cloud Platform the extraction script)."""
-        Logger().log("Start processing new malware labels\n",
-                     LoggedMessageType.BEGINNING)
-
-        # Read raw tags from file
+        the Google Cloud Platform the extraction script).
+        """
+        # Read the raw tags from file and process them by lowercasing
         vt_data_df = pandas.read_csv(Files.VT_DATA_FILE)
         raw_tags = vt_data_df["raw_tags"]
-
-        # Get lowercase individual tags
-        raw_tags = []
+        processed_raw_tags = []
         for elem in raw_tags:
-            raw_tags.extend(elem.lower().split(" "))
+            processed_raw_tags.extend(elem.lower().split(" "))
 
-        # Create a new data frame
+        # Create a new data frame having the malware families included in the
+        # malware families YAML file
         malware_families_names = [
             family.lower() for family in list(self._malware_families.keys())
         ]
@@ -224,16 +212,14 @@ class DataFolderScanner:
             family_votes = extractor.fit_transform(tags)[0]
             new_entry = [
                 file_type, entry["hash"],
-                DataFolderScanner._get_malice_score(
-                    self._malware_benign_vote_ratio, entry["malicious_votes"],
-                    entry["harmless_votes"]),
+                DataFolderScanner._compute_malice(
+                    self._malicious_benign_votes_ratio,
+                    entry["malicious_votes"], entry["harmless_votes"]),
                 *(preprocessing.normalize([family_votes], "l1")[0])
             ]
             labels_df = labels_df.append(
                 [pandas.Series(new_entry, index=labels_df.columns)],
                 ignore_index=True)
-
-        Logger().log("")
 
         # Print all outliers that were not considered into malware families
         # groups
@@ -244,34 +230,31 @@ class DataFolderScanner:
         # Dump data frame to CSV file
         labels_df.to_csv(Files.MALWARE_LABELS, index=False)
 
-        Logger().log("Successfully dumped labels to file",
-                     LoggedMessageType.SUCCESS)
+        Logger().log("The processed malware labels were dumped to file.",
+                     LoggedMessageTypes.SUCCESS)
 
-    def _continuous_folder_watch(self, malware_folder: bool,
-                                 sleep_in_seconds: int) -> None:
-        # While the stop function is not called, scan and sleep
-        while (not self._stop_scan_threads):
+    def _watch_continuously(self, malware_folder: bool,
+                            sleep_in_seconds: int) -> None:
+        while not self._stop_scan_threads:
             self._mutex.acquire()
             self._process_new_samples(malware_folder)
             self._mutex.release()
 
             time.sleep(sleep_in_seconds)
 
-    def _continuous_vt_scan(self, sleep_in_seconds: int) -> None:
-        # While the stop function is not called, scan and sleep
-        while (not self._stop_scan_threads):
+    def _scan_continuously(self, sleep_in_seconds: int) -> None:
+        while not self._stop_scan_threads:
             self._mutex.acquire()
-            self._scan_file_hash()
+            self._scan_next_hash()
             self._mutex.release()
 
             time.sleep(sleep_in_seconds)
 
-    def start_scanning(self,
-                       malware_folder: bool,
-                       folder_watch_interval: int,
-                       vt_scan_interval: int = 0) -> None:
-        """Starts the continuous scanning of a given folder, containing benign
-        programs or malware.
+    def start_scan(self,
+                   malware_folder: bool,
+                   folder_watch_interval: int,
+                   vt_scan_interval: int = 0) -> None:
+        """Starts the continuous scanning of a given folder.
 
         The hashes of the new files from the malware folder are scanned
         periodically with VirusTotal. This step is skipped for the benign ones,
@@ -282,50 +265,50 @@ class DataFolderScanner:
         of folder change.
 
         The malice score is computed as a weighted average, where each antivirus
-        engine vote has a weight: 1 for benign and malware_benign_vote_ratio for
-        malware.
+        engine vote has a weight: 1 for benign and malicious_benign_votes_ratio
+        for malware.
 
         Args:
             malware_folder (bool): Boolean indicating if the scanning should be
                 for the folder with benign files or the one with malware samples
             folder_watch_interval (int): Number of seconds between two
                 consecutive scans of the given folder
-            vt_scan_interval (int, optional): Number of seconds between two
-                consecutive scans of a malware hash with VirusTotal. Only for
-                malware folder scanning and useful to respect the quota of the
-                used account
+            vt_scan_interval (int): Number of seconds between two consecutive
+                scans of a malware hash with VirusTotal. Only for malware folder
+                scanning and useful to respect the quota of the used account
         """
         self._stop_scan_threads = False
 
-        self._folder_watch_thread = Thread(
-            target=self._continuous_folder_watch,
-            args=(malware_folder, folder_watch_interval))
+        self._folder_watch_thread = Thread(target=self._watch_continuously,
+                                           args=(malware_folder,
+                                                 folder_watch_interval))
         self._folder_watch_thread.start()
 
-        if (malware_folder):
-            self._vt_scan_thread = Thread(target=self._continuous_vt_scan,
+        if malware_folder:
+            self._vt_scan_thread = Thread(target=self._scan_continuously,
                                           args=(vt_scan_interval, ))
             self._vt_scan_thread.start()
 
         self._scan_parameters = (malware_folder, folder_watch_interval,
                                  vt_scan_interval)
 
-        Logger().log("Starting the scan of data folder",
-                     LoggedMessageType.BEGINNING)
+        Logger().log("The scan of data folder was started.",
+                     LoggedMessageTypes.BEGINNING)
 
-    def is_scanning_active(self) -> tuple:
+    def is_scan_active(self) -> tuple:
         """Checks if a folder scanning is active.
 
         Returns:
             tuple: Tuple containing on the first element a boolean indicating if
                 the scanning is active. If it is set, then the second element in
-                the tuple will be the scan parameters.
+                the tuple will contain the scan parameters.
         """
-        return (self._stop_scan_threads, self._scan_parameters)
+        return (not self._stop_scan_threads, self._scan_parameters)
 
-    def stop_scanning(self) -> None:
-        """Stops the continuous scanning, previously started."""
+    def stop_scan(self) -> None:
+        """Stops a previously started continuous scanning."""
         self._stop_scan_threads = True
         self._scan_parameters = (None, None, None)
 
-        Logger().log("Stopping the scan of data folder", LoggedMessageType.END)
+        Logger().log("The scan of data folder was stopped.",
+                     LoggedMessageTypes.END)

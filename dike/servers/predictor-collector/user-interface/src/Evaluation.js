@@ -114,7 +114,7 @@ class Evaluation extends React.Component {
    * Preprocess the data before plotting them in a histogram.
    *
    * @param {*} data Data being plotted
-   * @return {Array} Array of dictionaries containing the plooted data
+   * @return {Array} Array of dictionaries containing the plotted data
    * @memberof Evaluation
    */
   preprocessHistogramData(data) {

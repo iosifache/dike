@@ -1,18 +1,12 @@
-"""Module implementing the preprocessing core, namely a pipeline for applying
-preprocessors
+"""Core managing the usage of preprocessors for preprocessing.
 
 Usage example:
 
-    # Read the required configuration
-    configuration = ConfigurationWorker()
-
-    # Create the core
+    # Create a core for preprocessing and attach a core
     core = PreprocessingCore()
-
-    # Attach some preprocessors to the core
     core.attach(PreprocessorsTypes.IDENTITY)
 
-    # Preprocess the data stored in the constant DATA
+    # Process data
     preprocessed_data = core.preprocess([[1, 2, 0, 4], [0, 1, 3, 6]])
 """
 import typing
@@ -21,19 +15,22 @@ import joblib
 import numpy as np
 import pandas
 import scipy
-from configuration.platform import Files, Parameters
-from modules.features.types import ExtractorsType
+from modules.configuration.folder_structure import Files
+from modules.configuration.parameters import Packages
+from modules.features.types import ExtractorsTypes
 from modules.preprocessing.preprocessors import (Counter, CountVectorizer,
                                                  GroupCounter, Identity,
                                                  NGrams, Preprocessor,
                                                  SameLengthImputer)
-from modules.preprocessing.types import PreprocessorsTypes
-from modules.utils.configuration import ConfigurationSpace, ConfigurationWorker
+from modules.preprocessing.types import Charset, PreprocessorsTypes
+from modules.utils.configuration_manager import ConfigurationManager
+from modules.utils.types import ConfigurationSpaces
 from sklearn.preprocessing import Binarizer, KBinsDiscretizer, MinMaxScaler
 
 
 class PreprocessingCore:
-    """Class for preprocessing data by applying preprocessors"""
+    """Class for preprocessing data by applying preprocessors."""
+
     _is_loaded: bool
     _extractors_config: typing.Any
     _preprocessors_config: typing.Any
@@ -43,15 +40,12 @@ class PreprocessingCore:
 
     def __init__(self) -> None:
         """Initializes the PreprocessingCore instance."""
-        # Read the user configuration
-        configuration_worker = ConfigurationWorker()
-        self._extractors_config = configuration_worker.get_configuration_space(
-            ConfigurationSpace.EXTRACTORS)
-        self._preprocessors_config = \
-            configuration_worker.get_configuration_space(
-                ConfigurationSpace.PREPROCESSORS)
+        configuration = ConfigurationManager()
+        self._extractors_config = configuration.get_space(
+            ConfigurationSpaces.FEATURES)
+        self._preprocessors_config = configuration.get_space(
+            ConfigurationSpaces.PREPROCESSING)
 
-        # Default value of members
         self._is_loaded = False
         self._preprocessors = []
         self._columns_to_be_filled = []
@@ -59,20 +53,20 @@ class PreprocessingCore:
 
     def attach(self,
                preprocessor_type: PreprocessorsTypes,
-               parent_extractor_type: ExtractorsType = None) -> None:
-        """Attaches a preprocessor to master.
+               parent_extractor_type: ExtractorsTypes = None) -> None:
+        """Attaches a preprocessor to the core.
 
         Args:
             preprocessor_type (PreprocessorsTypes): Type of the preprocessor
-            parent_extractor_type (ExtractorsType): Type of the parent
+            parent_extractor_type (ExtractorsTypes): Type of the parent
                 extractor. Defaults to None, in case of a preprocessor that
                 does not require special arguments.
         """
         # Check what arguments are needed for the current preprocessor
         arguments = {}
-        if (preprocessor_type == PreprocessorsTypes.N_GRAMS):
-            charset = NGrams.Charset[self._preprocessors_config["ngrams"]
-                                     ["valid_charset"]]
+        if preprocessor_type == PreprocessorsTypes.N_GRAMS:
+            charset = Charset[self._preprocessors_config["ngrams"]
+                              ["valid_charset"]]
             arguments = {
                 "n":
                 self._preprocessors_config["ngrams"]["n"],
@@ -81,9 +75,11 @@ class PreprocessingCore:
                 "valid_charset":
                 charset
             }
-        elif (preprocessor_type == PreprocessorsTypes.GROUP_COUNTER):
-            if (parent_extractor_type == ExtractorsType.STATIC_OPCODES or
-                    parent_extractor_type == ExtractorsType.DYNAMIC_OPCODES):
+        elif preprocessor_type == PreprocessorsTypes.GROUP_COUNTER:
+            if (parent_extractor_type in [
+                    ExtractorsTypes.STATIC_OPCODES,
+                    ExtractorsTypes.DYNAMIC_OPCODES
+            ]):
                 arguments = {
                     "categories":
                     self._extractors_config["opcodes"]["categories"],
@@ -95,8 +91,9 @@ class PreprocessingCore:
                     "min_ignored_percent":
                     self._extractors_config["opcodes"]["min_ignored_percent"]
                 }
-            elif (parent_extractor_type == ExtractorsType.STATIC_APIS
-                  or parent_extractor_type == ExtractorsType.DYNAMIC_APIS):
+            elif (parent_extractor_type in [
+                    ExtractorsTypes.STATIC_APIS, ExtractorsTypes.DYNAMIC_APIS
+            ]):
                 arguments = {
                     "categories":
                     self._extractors_config["apis"]["categories"],
@@ -111,32 +108,34 @@ class PreprocessingCore:
 
         # Create the preprocessor
         preprocessor = None
-        if (preprocessor_type == PreprocessorsTypes.IDENTITY):
+        if preprocessor_type == PreprocessorsTypes.IDENTITY:
             preprocessor = Identity()
-        elif (preprocessor_type == PreprocessorsTypes.BINARIZER):
+        elif preprocessor_type == PreprocessorsTypes.BINARIZER:
             preprocessor = Binarizer()
-        elif (preprocessor_type == PreprocessorsTypes.K_BINS_DISCRETIZER):
+        elif preprocessor_type == PreprocessorsTypes.K_BINS_DISCRETIZER:
             preprocessor = KBinsDiscretizer()
 
             # Save this column in case of imputation needs
             self._columns_to_be_filled.append(len(self._preprocessors))
 
-        elif (preprocessor_type == PreprocessorsTypes.COUNTER):
+        elif preprocessor_type == PreprocessorsTypes.COUNTER:
             preprocessor = Counter()
-        elif (preprocessor_type == PreprocessorsTypes.COUNT_VECTORIZER):
+        elif preprocessor_type == PreprocessorsTypes.COUNT_VECTORIZER:
             preprocessor = CountVectorizer()
-        elif (preprocessor_type == PreprocessorsTypes.N_GRAMS):
+        elif preprocessor_type == PreprocessorsTypes.N_GRAMS:
             preprocessor = NGrams(**arguments)
-        elif (preprocessor_type == PreprocessorsTypes.GROUP_COUNTER):
+        elif preprocessor_type == PreprocessorsTypes.GROUP_COUNTER:
             preprocessor = GroupCounter(**arguments)
-        elif (preprocessor_type == PreprocessorsTypes.SAME_LENGTH_IMPUTER):
+        elif preprocessor_type == PreprocessorsTypes.SAME_LENGTH_IMPUTER:
             preprocessor = SameLengthImputer()
 
         self._preprocessors.append(preprocessor)
 
-    def _impute_values(self, X: np.array, desired_length: int = 0) -> np.array:
-        if (desired_length == 0):
-            imputed_features_df = pandas.DataFrame(X)
+    def _impute_values(self,
+                       matrix: np.array,
+                       desired_length: int = 0) -> np.array:
+        if desired_length == 0:
+            imputed_features_df = pandas.DataFrame(matrix)
             for column_id in self._columns_to_be_filled:
                 # Apply the imputer to each column
                 column = imputed_features_df.iloc[:, column_id].values
@@ -150,29 +149,29 @@ class PreprocessingCore:
 
         # If the desired length is set, then ensure that each vector has that
         # length
-        return SameLengthImputer(desired_length).fit_transform(X)
+        return SameLengthImputer(desired_length).fit_transform(matrix)
 
-    def preprocess(self, X: np.array) -> np.array:
+    def preprocess(self, matrix: np.array) -> np.array:
         """Preprocesses the given features.
 
         Args:
-            X (np.array): Raw features
+            matrix (np.array): Raw features
 
         Returns:
             np.array: Preprocessed features
         """
         # Impute values for some preprocessors
-        X = self._impute_values(X)
+        matrix = self._impute_values(matrix)
 
         # Apply the preprocessors manually
         processed_features = []
         for index, preprocessor in enumerate(self._preprocessors):
-            features = [x[index] for x in X]
+            features = [line[index] for line in matrix]
             if self._is_loaded:
                 try:
                     processed_features.append(preprocessor.transform(features))
                 except ValueError:
-                    # If there is a differences between features count, pad the
+                    # If there is a difference between features count, pad the
                     # vectors
                     features = self._impute_values(features,
                                                    preprocessor.n_features_in_)
@@ -216,17 +215,17 @@ class PreprocessingCore:
         """
         # Dump each preprocessor
         for index, preprocessor in enumerate(self._preprocessors):
-            preprocessor_model_filename = Files.MODEL_PREPROCESSOR_MODEL_FMT.format(
+            model_filename = Files.MODEL_PREPROCESSOR_MODEL_FMT.format(
                 model_name, index)
-            joblib.dump(preprocessor, preprocessor_model_filename)
+            joblib.dump(preprocessor, model_filename)
 
         # Dump the scalar
         filename = Files.MODEL_PREPROCESSOR_MODEL_FMT.format(
-            model_name, Parameters.ModelsManagement.Training.SCALAR_MODEL_NAME)
+            model_name, Packages.Models.Training.SCALAR_MODEL_NAME)
         joblib.dump(self._last_scalar_model, filename)
 
     def load(self, model_name: str, preprocessors_count: int) -> None:
-        """Loads the preprocessor and the scalar from file.
+        """Loads the preprocessor and the scalar from a file.
 
         Args:
             model_name (str): Name of the trained model
@@ -234,14 +233,13 @@ class PreprocessingCore:
         """
         # Load each preprocessor
         for preprocessor_id in range(preprocessors_count):
-            preprocessor_model_filename = Files.MODEL_PREPROCESSOR_MODEL_FMT.format(
+            model_filename = Files.MODEL_PREPROCESSOR_MODEL_FMT.format(
                 model_name, preprocessor_id)
-            self._preprocessors.append(
-                joblib.load(preprocessor_model_filename))
+            self._preprocessors.append(joblib.load(model_filename))
 
-        # Dump the scalar
+        # Load the scalar
         scalar_model_filename = Files.MODEL_PREPROCESSOR_MODEL_FMT.format(
-            model_name, Parameters.ModelsManagement.Training.SCALAR_MODEL_NAME)
+            model_name, Packages.Models.Training.SCALAR_MODEL_NAME)
         self._last_scalar_model = joblib.load(scalar_model_filename)
 
         self._is_loaded = True
