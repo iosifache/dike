@@ -1,0 +1,7 @@
+emojis==0.6.0
+mydocstring==0.2.7
+pandas==1.2.3
+pypattyrn==1.2
+riposte==0.4.1
+rpyc==5.0.1
+tabulate==0.8.9

@@ -1,0 +1,2 @@
+pypattyrn==1.2
+rpyc==5.0.1

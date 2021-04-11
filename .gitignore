@@ -1,30 +1,30 @@
 # Project-specific
 
 ## Configuration
-dike/data/configuration/_secrets.yaml
+data/configuration/_secrets.yaml
 
 ## Datasets
-dike/data/dataset/files/collected
-dike/data/dataset/labels/custom
-dike/data/dataset/others/malware_hashes.txt
+data/dataset/files/collected
+data/dataset/labels/custom
+data/dataset/others/malware_hashes.txt
 
 ## Keystore
-dike/data/keystore/*
-!dike/data/keystore/.gitkeep
+data/keystore/*
+!data/keystore/.gitkeep
 
 ## Models
-dike/data/models/*
-!dike/data/models/.gitkeep
+data/models/*
+data/models/.gitkeep
 
 ## Gidra
-dike/servers/subordinate/data/ghidra/*
-!dike/servers/subordinate/data/ghidra/.gitkeep
+data/subordinate/ghidra/*
+!data/subordinate/ghidra/.gitkeep
 
 ## Qiling
-dike/servers/subordinate/data/qiling/logs/*
-!dike/servers/subordinate/data/qiling/logs/.gitkeep
-dike/servers/subordinate/data/qiling/rootfs/*
-!dike/servers/subordinate/data/qiling/rootfs/.gitkeep
+data/subordinate/qiling/logs/*
+!data/subordinate/qiling/logs/.gitkeep
+data/subordinate/qiling/rootfs/*
+!data/subordinate/qiling/rootfs/.gitkeep
 
 ## Notes
 NOTES.md

@@ -3,6 +3,14 @@ import configuration from '../configuration/platform';
 
 const API_CONFIGURATION = configuration.api;
 
+// Set the base URL
+axios.defaults.baseURL =
+  window.location.protocol +
+  '//' +
+  window.location.hostname +
+  ':' +
+  String(API_CONFIGURATION.apiPort);
+
 /**
  * Class for working with the API
  *
@@ -16,13 +24,8 @@ class APIWorker {
    * @memberof APIWorker
    */
   static getMalwareFamilies(callback) {
-    const url =
-      API_CONFIGURATION.baseAddress +
-      '/' +
-      API_CONFIGURATION.routes.getMalwareFamilies;
-
     axios
-      .get(url, {
+      .get(API_CONFIGURATION.routes.getMalwareFamilies, {
         headers: {
           'Access-Control-Allow-Origin': '*',
         },
@@ -48,15 +51,10 @@ class APIWorker {
    * @memberof APIWorker
    */
   static getModelEvaluation(modelName, callback) {
-    const url =
-      API_CONFIGURATION.baseAddress +
-      '/' +
-      API_CONFIGURATION.routes.getEvaluation +
-      '/' +
-      modelName;
+    const route = API_CONFIGURATION.routes.getEvaluation + '/' + modelName;
 
     axios
-      .get(url, {
+      .get(route, {
         headers: {
           'Access-Control-Allow-Origin': '*',
         },
@@ -82,15 +80,10 @@ class APIWorker {
    * @memberof APIWorker
    */
   static getModelConfiguration(modelName, callback) {
-    const url =
-      API_CONFIGURATION.baseAddress +
-      '/' +
-      API_CONFIGURATION.routes.getConfiguration +
-      '/' +
-      modelName;
+    const route = API_CONFIGURATION.routes.getConfiguration + '/' + modelName;
 
     axios
-      .get(url, {
+      .get(route, {
         headers: {
           'Access-Control-Allow-Origin': '*',
         },
@@ -129,12 +122,7 @@ class APIWorker {
     checkingInterval,
     callback,
   ) {
-    const url =
-      API_CONFIGURATION.baseAddress +
-      '/' +
-      API_CONFIGURATION.routes.createTicket +
-      '/' +
-      modelName;
+    const route = API_CONFIGURATION.routes.createTicket + '/' + modelName;
     const formData = new FormData();
 
     formData.append('sample', file);
@@ -142,7 +130,7 @@ class APIWorker {
     if (similarCount) formData.append('similars_count', similarCount);
 
     axios
-      .post(url, formData, {
+      .post(route, formData, {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Content-Type': 'multipart/form-data',
@@ -180,15 +168,10 @@ class APIWorker {
    * @memberof APIWorker
    */
   static getTicketPeriodically(ticketName, interval, callback) {
-    const url =
-      API_CONFIGURATION.baseAddress +
-      '/' +
-      API_CONFIGURATION.routes.getTicket +
-      '/' +
-      ticketName;
+    const route = API_CONFIGURATION.routes.getTicket + '/' + ticketName;
 
     axios
-      .get(url, {
+      .get(route, {
         headers: {
           'Access-Control-Allow-Origin': '*',
         },
@@ -224,12 +207,7 @@ class APIWorker {
    * @memberof APIWorker
    */
   static publishResults(modelName, file, malice, memberships) {
-    const url =
-      API_CONFIGURATION.baseAddress +
-      '/' +
-      API_CONFIGURATION.routes.publish +
-      '/' +
-      modelName;
+    const route = API_CONFIGURATION.routes.publish + '/' + modelName;
 
     const formData = new FormData();
     formData.append('sample', file);
@@ -237,7 +215,7 @@ class APIWorker {
     formData.append('memberships', memberships.join(','));
 
     axios
-      .post(url, formData, {
+      .post(route, formData, {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Content-Type': 'multipart/form-data',

@@ -1,13 +1,13 @@
 const CONFIGURATION = {
   api: {
-    baseAddress: 'https://127.0.0.1:3804',
+    apiPort: '3804',
     routes: {
-      getMalwareFamilies: 'get_malware_families',
-      getEvaluation: 'get_evaluation',
-      getConfiguration: 'get_configuration',
-      createTicket: 'create_ticket',
-      getTicket: 'get_ticket',
-      publish: 'publish',
+      getMalwareFamilies: '/get_malware_families',
+      getEvaluation: '/get_evaluation',
+      getConfiguration: '/get_configuration',
+      createTicket: '/create_ticket',
+      getTicket: '/get_ticket',
+      publish: '/publish',
     },
     statuses: {
       success: 'success',
