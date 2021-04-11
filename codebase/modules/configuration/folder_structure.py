@@ -8,7 +8,8 @@ class Folders:
     ones. The tests folders are omitted.
     """
 
-    _ROOT = "/home/iosifache/Documents/dike/dike/"
+    _ROOT = "/opt/dike/"
+    _CODEBASE = _ROOT + "codebase/"
     _DATA = _ROOT + "data/"
     _DATA_USER_CONFIGURATION = _DATA + "configuration/"
     _DATA_DATASET = _DATA + "dataset/"
@@ -16,12 +17,9 @@ class Folders:
     _DATA_DATASET_LABELS = _DATA_DATASET + "labels/"
     _DATA_DATASET_OTHERS = _DATA_DATASET + "others/"
     _DATA_KEYSTORE = _DATA + "keystore/"
-    _SCRIPTS = _ROOT + "scripts/"
-    _SERVERS = _ROOT + "servers/"
-    _SERVERS_SUBORDINATE = _SERVERS + "subordinate/"
-    _SERVERS_SUBORDINATE_DATA = _SERVERS_SUBORDINATE + "data/"
-    _SERVERS_SUBORDINATE_DATA_QILING = _SERVERS_SUBORDINATE_DATA + "qiling/"
-    _TESTS = _ROOT + "tests/"
+    _DATA_SUBORDINATE = _DATA + "subordinate/"
+    _DATA_SUBORDINATE_QILING = _DATA_SUBORDINATE + "qiling/"
+    _SCRIPTS = _CODEBASE + "scripts/"
 
     BENIGN_FILES = _DATA_DATASET_FILES + "benign/"
     MALICIOUS_FILES = _DATA_DATASET_FILES + "malware/"
@@ -30,10 +28,10 @@ class Folders:
     MODELS = _DATA + "models/"
     MODEL_FMT = MODELS + "{}/"
     MODEL_PREPROCESSORS_FMT = MODEL_FMT + "preprocessors/"
-    QILING_LOGS = _SERVERS_SUBORDINATE_DATA_QILING + "logs/"
-    QILING_ROOTS = _SERVERS_SUBORDINATE_DATA_QILING + "rootfs/"
-    GHIDRA = "/home/iosifache/Documents/Programs/ghidra/"
-    GHIDRA_PROJECT = _SERVERS_SUBORDINATE_DATA + "ghidra/"
+    QILING_LOGS = _DATA_SUBORDINATE_QILING + "logs/"
+    QILING_ROOTS = _DATA_SUBORDINATE_QILING + "rootfs/"
+    GHIDRA = "/opt/ghidra/"
+    GHIDRA_PROJECT = _DATA_SUBORDINATE + "ghidra/"
 
 
 class Files:
@@ -65,8 +63,3 @@ class Files:
                                           + "prediction_configuration.json")
     GHIDRA_HEADLESS_ANALYZER = Folders.GHIDRA + "support/analyzeHeadless"
     GHIDRA_EXTRACTION_SCRIPT = Folders._SCRIPTS + "delegate_ghidra.py"
-    TESTS_USER_CONFIGURATION = Folders._TESTS + "configuration.yaml"
-    TESTS_DATASET_CONFIGURATION = Folders._TESTS + "dataset.yaml"
-    TESTS_MODEL_CONFIGURATION = Folders._TESTS + "model.yaml"
-    TESTS_EXE_SAMPLE = Folders._TESTS + "sample.exe"
-    TESTS_OLE_SAMPLE = Folders._TESTS + "sample.ole"

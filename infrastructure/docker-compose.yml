@@ -1,35 +1,43 @@
-# Services (modify the bind mount if the user is another one)
 services:
     leader:
         build: leader
+        container_name: leader
         volumes:
-            - /home/iosif/dike:/dike
+            - /opt/dike:/opt/dike
         networks:
             network:
                 ipv4_address: 192.168.0.2
+
     first_subordinate:
         build: subordinate
+        container_name: first_subordinate
         volumes:
-            - /home/iosif/dike:/dike
+            - /opt/dike:/opt/dike
+            - /opt/ghidra:/opt/ghidra
         networks:
             network:
                 ipv4_address: 192.168.0.10
+
     second_subordinate:
         build: subordinate
+        container_name: second_subordinate
         volumes:
-            - /home/iosif/dike:/dike
+            - /opt/dike:/opt/dike
+            - /opt/ghidra:/opt/ghidra
         networks:
             network:
                 ipv4_address: 192.168.0.11
+
     predictor-collector:
         build: predictor-collector
+        container_name: predictor-collector
         volumes:
-            - /home/iosif/dike:/dike
+            - /opt/dike:/opt/dike
+            - /opt/ghidra:/opt/ghidra
         networks:
             network:
                 ipv4_address: 192.168.0.100
 
-# Network
 networks:
     network:
         ipam:

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-# Wait for the volume to be mounted and install the requirements
-until cd /dike/dike && pip install -r requirements.txt
+# Wait for the volume to be mounted
+until cd /opt/dike/codebase
 do
-    echo "Retrying pip install.."
+    echo "Waiting.."
 done
 
-# Run the program
-cd /dike/dike/subordinate
-python app.py
+# Run the subordinate server
+cd /opt/dike/codebase
+python servers/subordinate/app.py
