@@ -2,7 +2,7 @@
 
 packages:
     dataset:
-        malware_families: !include _families.yaml
+        malware_families: !include_families.yaml
         malicious_benign_votes_ratio: 2
         min_ignored_percent: 0.03
 
@@ -11,12 +11,12 @@ packages:
             min_string_length: 10
             min_occurrences: 1
         opcodes:
-            categories: !include _opcodes.yaml
+            categories: !include_opcodes.yaml
             allow_multiple_categories: 1
             verbose: True
             min_ignored_percent: 0.03
         apis:
-            categories: !include _apis.yaml
+            categories: !include_apis.yaml
             ignored_prefixes:
                 - Rtl
                 - Csr
@@ -81,6 +81,6 @@ servers:
         hostname: 0.0.0.0
         port: 3804
         is_secure: True
-        is_debug: True
+        is_debug: False
 
-secrets: !include _secrets.yaml
+secrets: !include_secrets.yaml

@@ -118,12 +118,18 @@ class ModelsManagementCore:
 
         return new_entry
 
-    def create_ticket(self) -> str:
+    def create_ticket(self, model_name: str) -> str:
         """Creates a new ticket based on which a prediction will be retrieved.
+
+        Args:
+            model_name (str): Name of the model
 
         Returns:
             str: Ticket name
         """
+        # Try to load the model to verify its existence
+        self._get_model_entry(model_name)
+
         # Create a new ticket ID
         ticket_name = binascii.hexlify(os.urandom(
             self._ticket_length)).decode("utf-8")
@@ -184,7 +190,7 @@ class ModelsManagementCore:
                               model_name: str,
                               full_filename: str = None,
                               features: typing.Any = None,
-                              similarity_analysis: bool = False,
+                              analyst_mode: bool = False,
                               similar_count: int = 0,
                               delete_file_after: bool = False) -> None:
         """Predicts the malice or the memberships to malware categories.
@@ -195,10 +201,10 @@ class ModelsManagementCore:
             full_filename (str): Full path to the file over which a prediction
                 will be made, saved as a temporary file
             features (typing.Any): Already extracted raw features of the file
-            similarity_analysis (bool): Boolean indicating if a similarity
-                analysis needs to be done. Defaults to False.
+            analyst_mode (bool): Boolean indicating if the analyst mode is
+                enabled. Defaults to False.
             similar_count (int): Number of similar samples to return. Defaults
-                to 0, if the similarity analysis is disabled.
+                to 0, if the analyst mode is disabled.
             delete_file_after: Boolean indicating if the file is deleted after
                 the prediction. Defaults to False.
         """
@@ -216,8 +222,7 @@ class ModelsManagementCore:
         # Predict using the entry and link the result to the ticket
         try:
             result = entry.active_object.predict(full_filename, features,
-                                                 similarity_analysis,
-                                                 similar_count)
+                                                 analyst_mode, similar_count)
         except Error:
             result = None
         ticket_entry = self._tickets_entries[ticket_name]
@@ -256,6 +261,16 @@ class ModelsManagementCore:
         ticket_entry.last_accessed = time.time()
 
         return ticket_entry.active_object
+
+    def get_file_features(self, model_name: str, file_hash: str) -> dict:
+        """See the Model.get_file_features() method.
+
+        # noqa
+        """
+        entry = self._get_model_entry(model_name)
+        result = entry.active_object.get_file_features(file_hash)
+
+        return result
 
     def set_prediction_configuration(self, model_name: str,
                                      parameter_name: str,

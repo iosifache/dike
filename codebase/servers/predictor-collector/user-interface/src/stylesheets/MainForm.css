@@ -9,15 +9,15 @@
 }
 
 .MainForm .particles-background.benign {
-  background-color: var(--white);
+  background-color: var(--emerald-green);
 }
 
 .MainForm .particles-background.suspicious {
-  background-color: var(--white);
+  background-color: var(--carrot-orange);
 }
 
 .MainForm .particles-background.malicious {
-  background-color: var(--white);
+  background-color: var(--alizarin-red);
 }
 
 .MainForm > .container {
@@ -49,6 +49,18 @@
   animation: infinite-rotate 2s linear infinite;
 }
 
+.MainForm .scan-results .description-benign b{
+  color: var(--emerald-green);
+}
+
+.MainForm .scan-results .description-suspicious b{
+  color: var(--carrot-orange);
+}
+
+.MainForm .scan-results .description-malicious b{
+  color: var(--alizarin-red);
+}
+
 .MainForm .scan-results table tr {
   border-bottom: 1px #000 solid;
 }
@@ -68,6 +80,11 @@
 
 .MainForm .scan-results table td {
   font-weight: 300;
+}
+
+.MainForm .scan-results .compare-button{
+  color: var(--black);
+  cursor: pointer;
 }
 
 .MainForm .publication-form  .file {

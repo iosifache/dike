@@ -259,8 +259,8 @@ main(){
     log_error "The number of arguments is invalid.\n"
     print_manual_and_exit
   fi
-  action="$1"
-  username="$2"
+  local action="$1"
+  local username="$2"
 
   # Check if given user exists
   grep -c "^$username:" /etc/passwd &> /dev/null

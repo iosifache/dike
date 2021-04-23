@@ -607,7 +607,7 @@ def stop_retraining(model_name: str,
 @wrapped_command()
 def create_ticket(model_name: str,
                   sample_filename: str,
-                  similarity_analysis: bool = False,
+                  analyst_mode: bool = False,
                   similar_count: int = 0,
                   result: str = None) -> None:
     """Creates a ticket for predicting a result for a file.
@@ -615,10 +615,10 @@ def create_ticket(model_name: str,
     Args:
         model_name (str): Name of the model
         sample_filename (str): Name of the sample, stored locally
-        similarity_analysis (bool): Boolean indicating if a similarity analysis
-            needs to be done. Defaults to False.
+        analyst_mode (bool): Boolean indicating if the analyst mode is enabled.
+            Defaults to False.
         similar_count (int): Number of similar samples to return. Defaults to 0,
-            if the similarity analysis is disabled.
+            if the analyst mode is disabled.
         result (str): Result received from the decorator. Defaults to None.
     """
     if result is not None:

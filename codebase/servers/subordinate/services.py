@@ -333,7 +333,7 @@ class SubordinationService(rpyc.Service, metaclass=Singleton):
                       model_name: str,
                       sample_content: bytes = None,
                       features: typing.Any = None,
-                      similarity_analysis: bool = False,
+                      analyst_mode: bool = False,
                       similar_count: int = 0) -> str:
         """Predicts the malice or the memberships to malware categories.
 
@@ -363,11 +363,11 @@ class SubordinationService(rpyc.Service, metaclass=Singleton):
             temp_sample_filename = temp_sample.name
 
         # Create a new ticket
-        ticket_name = self._model_management_core.create_ticket()
+        ticket_name = self._model_management_core.create_ticket(model_name)
 
         # Create a new thread for prediction
         prediction_args = (ticket_name, model_name, temp_sample_filename,
-                           features, similarity_analysis, similar_count, True)
+                           features, analyst_mode, similar_count, True)
         arguments = (self._model_management_core.predict_synchronously,
                      ) + prediction_args
         thread = Thread(target=_execute_threaded_operation, args=arguments)

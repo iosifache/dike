@@ -41,3 +41,7 @@ class InvalidSimilarCountError(Error):
 
 class InvalidSampleTypeError(Error):
     """The submitted file has a type that is not supported by the platform."""
+
+
+class PredictionNotCalledFirstError(Error):
+    """The prediction route was not called before the feature getting one."""

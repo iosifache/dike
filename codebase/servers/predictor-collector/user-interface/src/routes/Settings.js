@@ -2,8 +2,8 @@ import React from 'react';
 import {Cookies, withCookies} from 'react-cookie';
 import {Helmet} from 'react-helmet';
 import {instanceOf} from 'prop-types';
-import APIWorker from './utils/api_worker';
-import {isModelNameValid} from './utils/common';
+import APIWorker from '../utils/api_worker';
+import {isModelNameValid} from '../utils/common';
 
 import {
   Button,
@@ -22,7 +22,11 @@ import {FaSave} from 'react-icons/fa';
 import {GoGraph} from 'react-icons/go';
 import {IoChevronBack} from 'react-icons/io5';
 
-import './stylesheets/Settings.css';
+import '../stylesheets/Settings.css';
+
+import CONFIGURATION from '../configuration/platform';
+
+const ROUTES_CONFIGURATION = CONFIGURATION.routes;
 
 /**
  * Component for settings page
@@ -34,7 +38,7 @@ class Settings extends React.Component {
   defaultState = {
     modelName: '',
     checkingInterval: 0,
-    isSimilarityAnalysisEnabled: 0,
+    isAnalystModeEnabled: 0,
     similarSamplesCount: 0,
     predictionConfiguration: {},
     invalidField: -1,
@@ -54,7 +58,7 @@ class Settings extends React.Component {
 
     this.handleNameChange = this.handleNameChange.bind(this);
     this.handleIntervalChange = this.handleIntervalChange.bind(this);
-    this.handleAnalysisChange = this.handleAnalysisChange.bind(this);
+    this.handleAnalystModeChange = this.handleAnalystModeChange.bind(this);
     this.handleSimilarsCountChange = this.handleSimilarsCountChange.bind(this);
     this.updateModelConfigurationField = this.updateModelConfigurationField.bind(
       this,
@@ -67,13 +71,13 @@ class Settings extends React.Component {
       const {
         modelName,
         checkingInterval,
-        isSimilarityAnalysisEnabled,
+        isAnalystModeEnabled,
         similarSamplesCount,
       } = scanConfiguration;
 
       this.state.modelName = modelName;
       this.state.checkingInterval = checkingInterval;
-      this.state.isSimilarityAnalysisEnabled = isSimilarityAnalysisEnabled;
+      this.state.isAnalystModeEnabled = isAnalystModeEnabled;
       this.state.similarSamplesCount = similarSamplesCount;
 
       APIWorker.getModelConfiguration(
@@ -131,17 +135,17 @@ class Settings extends React.Component {
   }
 
   /**
-   * Handles the change of the similarity analysis enabling.
+   * Handles the change of the analyst mode enabling.
    *
-   * @param {Event} event Similarity analysis enabling event
+   * @param {Event} event Analyst mode enabling event
    * @memberof Settings
    */
-  handleAnalysisChange(event) {
+  handleAnalystModeChange(event) {
     let similarSamplesCount = this.state.similarSamplesCount;
 
     if (event === 0) similarSamplesCount = 0;
     this.setState({
-      isSimilarityAnalysisEnabled: Boolean(event),
+      isAnalystModeEnabled: Boolean(event),
       similarSamplesCount: similarSamplesCount,
       isSaved: 0,
     });
@@ -169,15 +173,14 @@ class Settings extends React.Component {
     let {
       modelName,
       checkingInterval,
-      isSimilarityAnalysisEnabled,
+      isAnalystModeEnabled,
       similarSamplesCount,
       predictionConfiguration,
       isSaved,
     } = this.state;
     let invalidField = -1;
 
-    if (isSimilarityAnalysisEnabled === 1 && similarSamplesCount < 1)
-      invalidField = 3;
+    if (isAnalystModeEnabled === 1 && similarSamplesCount < 1) invalidField = 3;
     if (checkingInterval < 1) invalidField = 1;
     if (!isModelNameValid(modelName)) invalidField = 0;
 
@@ -188,7 +191,7 @@ class Settings extends React.Component {
       cookies.set('configuration', {
         modelName: modelName,
         checkingInterval: checkingInterval,
-        isSimilarityAnalysisEnabled: isSimilarityAnalysisEnabled,
+        isAnalystModeEnabled: isAnalystModeEnabled,
         similarSamplesCount: similarSamplesCount,
         predictionConfiguration: predictionConfiguration,
       });
@@ -210,7 +213,7 @@ class Settings extends React.Component {
     const {
       modelName,
       checkingInterval,
-      isSimilarityAnalysisEnabled,
+      isAnalystModeEnabled,
       similarSamplesCount,
       invalidField,
       isSaved,
@@ -225,7 +228,7 @@ class Settings extends React.Component {
 
           <Row className="menu">
             <Col>
-              <Link to="/">
+              <Link to={ROUTES_CONFIGURATION.default.name}>
                 <Image
                   src={process.env.PUBLIC_URL + '/images/logo.png'}
                   className="logo"
@@ -233,7 +236,7 @@ class Settings extends React.Component {
               </Link>
             </Col>
             <Col>
-              <Link to="/">
+              <Link to={ROUTES_CONFIGURATION.default.name}>
                 <IoChevronBack className="action-button" />
               </Link>
             </Col>
@@ -258,8 +261,13 @@ class Settings extends React.Component {
                   onChange={this.handleNameChange}
                 />
                 <InputGroup.Append>
-                  {isModelNameValid(modelName) ? (
-                    <Link target="_blank" to={'/evaluation/' + modelName}>
+                  {isModelNameValid(modelName) && isAnalystModeEnabled ? (
+                    <Link
+                      target="_blank"
+                      to={
+                        ROUTES_CONFIGURATION.evaluation.name + '/' + modelName
+                      }
+                    >
                       <Button variant="dark" size="sm">
                         <span>
                           Check the model evaluation <GoGraph />
@@ -302,13 +310,13 @@ class Settings extends React.Component {
               </Col>
               <Col>
                 <Form.Group>
-                  <Form.Label>Similarity Analysis</Form.Label>
+                  <Form.Label>Analyst Mode</Form.Label>
                   <ToggleButtonGroup
                     type="radio"
                     size="sm"
                     name="analysis-options"
-                    defaultValue={Number(isSimilarityAnalysisEnabled)}
-                    onChange={this.handleAnalysisChange}
+                    defaultValue={Number(isAnalystModeEnabled)}
+                    onChange={this.handleAnalystModeChange}
                   >
                     <ToggleButton value={0} variant="dark">
                       Disabled
@@ -318,10 +326,11 @@ class Settings extends React.Component {
                     </ToggleButton>
                   </ToggleButtonGroup>
                   <Form.Text className="text-muted">
-                    The analysis of the similarity consists of returning,
-                    besides the predicted result, the samples in the dataset
-                    that are the most similar to the submitted file, considering
-                    their extracted features.
+                    The analyst mode enables some application features, such as
+                    the model evaluation and analysis of the similarity. The
+                    last one consists of returning, besides the predicted
+                    result, the samples in the dataset that are the most similar
+                    to the submitted file, considering their extracted features.
                   </Form.Text>
                 </Form.Group>
               </Col>
@@ -334,12 +343,13 @@ class Settings extends React.Component {
                     size="sm"
                     placeholder="Enter the number of similar samples"
                     invalid={invalidField === 3 ? 1 : 0}
-                    disabled={!isSimilarityAnalysisEnabled}
+                    disabled={!isAnalystModeEnabled}
                     onChange={this.handleSimilarsCountChange}
                   />
                   <Form.Text className="text-muted">
-                    If the similarity analysis is enabled, the number indicated
-                    how many similar samples to return.
+                    If the similarity analysis is enabled (namely the analyst
+                    mode), the number indicated how many similar samples to
+                    return.
                   </Form.Text>
                 </Form.Group>
               </Col>

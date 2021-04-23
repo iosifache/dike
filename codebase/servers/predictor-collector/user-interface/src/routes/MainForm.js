@@ -2,7 +2,7 @@ import React from 'react';
 import {Cookies, withCookies} from 'react-cookie';
 import {Helmet} from 'react-helmet';
 import {instanceOf} from 'prop-types';
-import APIWorker from './utils/api_worker';
+import APIWorker from '../utils/api_worker';
 
 import {
   Button,
@@ -19,14 +19,17 @@ import {Link} from 'react-router-dom';
 import {AiOutlineScan, AiOutlineSetting} from 'react-icons/ai';
 import {CgSpinner} from 'react-icons/cg';
 import {IoMdRefresh} from 'react-icons/io';
-import {MdPublish} from 'react-icons/md';
+import {MdPublish, MdCompare} from 'react-icons/md';
 
-import './stylesheets/MainForm.css';
+import FeaturesTable from '../components/FeaturesTable';
 
-import CONFIGURATION from './configuration/platform';
+import '../stylesheets/MainForm.css';
 
-const DECIMALS_ACCURACY = CONFIGURATION.decimalsAccuracy;
+import CONFIGURATION from '../configuration/platform';
+
+const ROUTES_CONFIGURATION = CONFIGURATION.routes;
 const PARTICLES_CONFIGURATION = CONFIGURATION.particles;
+const DECIMALS_ACCURACY = CONFIGURATION.decimalsAccuracy;
 
 const STAGE = {
   DEFAULT: 0,
@@ -43,6 +46,8 @@ const STAGE = {
  */
 class MainForm extends React.Component {
   defaultState = {
+    modelName: null,
+    analystModeEnabled: false,
     scannedFileInputPlaceholder: 'Select the file to scan',
     publishedFileInputPlaceholder: 'Select the file to publish',
     selectedFileToScan: null,
@@ -78,7 +83,16 @@ class MainForm extends React.Component {
     );
     this.goToNextPublicationStage = this.goToNextPublicationStage.bind(this);
 
+    // Check if the analyst mode is enabled
     const {cookies} = this.props;
+    const scanConfiguration = cookies.get('configuration');
+    if (scanConfiguration) {
+      const {isAnalystModeEnabled} = scanConfiguration;
+
+      this.state.isAnalystModeEnabled = isAnalystModeEnabled;
+    }
+
+    // Get the malware families
     const malwareFamilies = cookies.get('malwareFamilies');
     if (malwareFamilies) {
       this.defaultState.familiesNames = malwareFamilies;
@@ -184,17 +198,20 @@ class MainForm extends React.Component {
     if (currentStage === STAGE.DEFAULT) {
       const {cookies} = this.props;
       const scanConfiguration = cookies.get('configuration');
+      let modelNameToSave = '';
       if (scanConfiguration) {
         const {
           modelName,
           checkingInterval,
-          isSimilarityAnalysisEnabled,
+          isAnalystModeEnabled,
           similarSamplesCount,
         } = scanConfiguration;
 
+        modelNameToSave = modelName;
+
         APIWorker.scanSample(
           modelName,
-          isSimilarityAnalysisEnabled,
+          isAnalystModeEnabled,
           similarSamplesCount,
           selectedFileToScan,
           checkingInterval,
@@ -203,6 +220,7 @@ class MainForm extends React.Component {
       }
 
       this.setState({
+        modelName: modelNameToSave,
         currentStage: STAGE.WAIT_SCAN_RESULTS,
       });
     } else if (currentStage === STAGE.SHOW_SCAN_RESULTS)
@@ -278,6 +296,13 @@ class MainForm extends React.Component {
    * @memberof MainForm
    */
   showScanResult(results) {
+    if ('features' in results) {
+      localStorage.setItem(
+        'scannedFileFeatures',
+        JSON.stringify(results.features),
+      );
+    }
+
     this.setState({
       scanResult: results,
       currentStage: STAGE.SHOW_SCAN_RESULTS,
@@ -322,6 +347,8 @@ class MainForm extends React.Component {
    */
   render() {
     const {
+      modelName,
+      isAnalystModeEnabled,
       scannedFileInputPlaceholder,
       publishedFileInputPlaceholder,
       currentStage,
@@ -350,7 +377,7 @@ class MainForm extends React.Component {
           malice < scanConfiguration.predictionConfiguration.min_malice_suspect
         ) {
           description = (
-            <p>
+            <p className="description-benign">
               The file is <b>benign</b>, with predicted{' '}
               <b>malice of {printableMalice}%</b>, and can be used carefree. If
               you notice an anomalous behavior of your device after the usage,
@@ -362,7 +389,7 @@ class MainForm extends React.Component {
           scanConfiguration.predictionConfiguration.min_malice_malicious
         ) {
           description = (
-            <p>
+            <p className="description-suspicious">
               The file is <b>suspect</b>, with predicted{' '}
               <b>malice of {printableMalice}%</b>. Run it in a controlled
               environment (for example, a sandbox) for avoiding any risk. As an
@@ -372,7 +399,7 @@ class MainForm extends React.Component {
           );
         } else {
           description = (
-            <p>
+            <p className="description-malicious">
               The file is <b>malicious</b>, with predicted{' '}
               <b>malice of {printableMalice}%</b>. Delete it now from your
               computer and report the incident to the security team of the
@@ -409,7 +436,25 @@ class MainForm extends React.Component {
 
           return (
             <tr key={index}>
-              <td>{hash}</td>
+              <td>
+                {hash}{' '}
+                <Link
+                  to={{
+                    pathname:
+                      ROUTES_CONFIGURATION.comparison.name +
+                      '/' +
+                      modelName +
+                      '/' +
+                      hash,
+                    state: {
+                      scannedFileFeatures: scanResult.features,
+                    },
+                  }}
+                  target="_blank"
+                >
+                  <MdCompare className="compare-button" />
+                </Link>
+              </td>
               <td>{similarity}%</td>
             </tr>
           );
@@ -433,7 +478,7 @@ class MainForm extends React.Component {
         <Container>
           <Row className="menu">
             <Col>
-              <Link to="/">
+              <Link to={ROUTES_CONFIGURATION.default.name}>
                 <Image
                   src={process.env.PUBLIC_URL + '/images/logo.png'}
                   className="logo"
@@ -441,7 +486,7 @@ class MainForm extends React.Component {
               </Link>
             </Col>
             <Col>
-              <Link to="/settings">
+              <Link to={ROUTES_CONFIGURATION.settings.name}>
                 <AiOutlineSetting
                   className={
                     'action-button' +
@@ -516,6 +561,16 @@ class MainForm extends React.Component {
                   </Table>
                 </div>
               )}
+              {'features' in scanResult && (
+                <div>
+                  <h3>Extracted Features</h3>
+                  <p>
+                    The extracted features, specific to the selected model, were
+                    listed in the table above.
+                  </p>
+                  <FeaturesTable scannedFileFeatures={scanResult.features} />
+                </div>
+              )}
               {'similar' in scanResult && (
                 <div>
                   <h3>Similarity Analysis Results</h3>
@@ -538,68 +593,70 @@ class MainForm extends React.Component {
             </div>
           )}
 
-          <Form className="publication-form">
-            <h1>Publication</h1>
-            <p>
-              After finishing the malware analysis process, select the file and
-              fill the accurate results to publish to the artificial
-              intelligence model specified in the settings.
-            </p>
-            <Form.File
-              label={publishedFileInputPlaceholder}
-              size="sm"
-              custom
-              disabled={!scanConfiguration}
-              className="file"
-              onChange={this.selectLocalFileToPublish}
-            />
-            <Button
-              className="proceed-button"
-              variant="dark"
-              size="sm"
-              disabled={!scanConfiguration}
-              onClick={this.goToNextPublicationStage}
-            >
-              {currentStage != STAGE.AFTER_PUBLISHING_FILE ? (
-                <span>
-                  Publish <MdPublish />
-                </span>
-              ) : (
-                <span>
-                  Restart <IoMdRefresh />
-                </span>
-              )}
-            </Button>
-            <Row>
-              <Col>
-                <Form.Group>
-                  <Form.Label>Malice</Form.Label>
-                  <Form.Control
-                    value={setMalice}
-                    type="text"
-                    size="sm"
-                    placeholder="Enter the malice"
-                    invalid={invalidField === 0 ? 1 : 0}
-                    onChange={this.handleMaliceChange}
-                  />
-                  <Form.Text className="text-muted">
-                    The malice will be used to train the model if it is a
-                    regression one.
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-              <Col>
-                <Form.Group>
-                  <Form.Label>Memberships to Malware Families</Form.Label>
-                  {this.getPublicationFamiliesTableBody()}
-                  <Form.Text className="text-muted">
-                    The memberships to malware families will be used to train
-                    the model if it is a soft multi-label classification one.
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-            </Row>
-          </Form>
+          {isAnalystModeEnabled && (
+            <Form className="publication-form">
+              <h1>Publication</h1>
+              <p>
+                After finishing the malware analysis process, select the file
+                and fill the accurate results to publish to the artificial
+                intelligence model specified in the settings.
+              </p>
+              <Form.File
+                label={publishedFileInputPlaceholder}
+                size="sm"
+                custom
+                disabled={!scanConfiguration}
+                className="file"
+                onChange={this.selectLocalFileToPublish}
+              />
+              <Button
+                className="proceed-button"
+                variant="dark"
+                size="sm"
+                disabled={!scanConfiguration}
+                onClick={this.goToNextPublicationStage}
+              >
+                {currentStage != STAGE.AFTER_PUBLISHING_FILE ? (
+                  <span>
+                    Publish <MdPublish />
+                  </span>
+                ) : (
+                  <span>
+                    Restart <IoMdRefresh />
+                  </span>
+                )}
+              </Button>
+              <Row>
+                <Col>
+                  <Form.Group>
+                    <Form.Label>Malice</Form.Label>
+                    <Form.Control
+                      value={setMalice}
+                      type="text"
+                      size="sm"
+                      placeholder="Enter the malice"
+                      invalid={invalidField === 0 ? 1 : 0}
+                      onChange={this.handleMaliceChange}
+                    />
+                    <Form.Text className="text-muted">
+                      The malice will be used to train the model if it is a
+                      regression one.
+                    </Form.Text>
+                  </Form.Group>
+                </Col>
+                <Col>
+                  <Form.Group>
+                    <Form.Label>Memberships to Malware Families</Form.Label>
+                    {this.getPublicationFamiliesTableBody()}
+                    <Form.Text className="text-muted">
+                      The memberships to malware families will be used to train
+                      the model if it is a soft multi-label classification one.
+                    </Form.Text>
+                  </Form.Group>
+                </Col>
+              </Row>
+            </Form>
+          )}
         </Container>
       </div>
     );

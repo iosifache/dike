@@ -160,11 +160,12 @@ class Servers:
             """Class containing the routes implemented by the API."""
 
             DEFAULT = "/"
-            STATIC = "/static"
 
             GET_MALWARE_FAMILIES = "/get_malware_families"
             GET_EVALUATION = "/get_evaluation"
             GET_CONFIGURATION = "/get_configuration"
+
+            GET_FEATURES = "/get_features"
 
             CREATE_TICKET = "/create_ticket"
             GET_TICKET = "/get_ticket"

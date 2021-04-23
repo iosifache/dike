@@ -37,6 +37,7 @@ class PreprocessingCore:
     _preprocessors: typing.List[Preprocessor]
     _columns_to_be_filled: list
     _last_scalar_model: MinMaxScaler
+    _preprocessors_output_lengths: list
 
     def __init__(self) -> None:
         """Initializes the PreprocessingCore instance."""
@@ -50,6 +51,7 @@ class PreprocessingCore:
         self._preprocessors = []
         self._columns_to_be_filled = []
         self._last_scalar_model = None
+        self._preprocessors_output_lengths = []
 
     def attach(self,
                preprocessor_type: PreprocessorsTypes,
@@ -169,30 +171,47 @@ class PreprocessingCore:
             features = [line[index] for line in matrix]
             if self._is_loaded:
                 try:
-                    processed_features.append(preprocessor.transform(features))
+                    current_preprocessed = preprocessor.transform(features)
+
                 except ValueError:
                     # If there is a difference between features count, pad the
                     # vectors
                     features = self._impute_values(features,
                                                    preprocessor.n_features_in_)
-                    processed_features.append(preprocessor.transform(features))
+                    current_preprocessed = preprocessor.transform(features)
             else:
-                processed_features.append(preprocessor.fit_transform(features))
+                current_preprocessed = preprocessor.fit_transform(features)
+
+            processed_features.append(current_preprocessed)
+
+        # Transpose the matrix of features to let each line represent a sample
         processed_features = list(map(list, zip(*processed_features)))
 
         # Drop the array and sparse matrix representations
         converted_features = []
-        for preprocessor_id, _ in enumerate(processed_features):
-            converted_features.append(list())
-            for feature_id in range(len(processed_features[preprocessor_id])):
-                feature = processed_features[preprocessor_id][feature_id]
+        length_already_stored = bool(self._preprocessors_output_lengths)
+        for sample_id, _ in enumerate(processed_features):
+            current_features = []
+            for feature_id in range(len(processed_features[sample_id])):
+                feature = processed_features[sample_id][feature_id]
                 if isinstance(feature, scipy.sparse.csr.csr_matrix):
-                    converted_features[preprocessor_id].extend(
-                        feature.toarray()[0])
+                    current_features.extend(feature.toarray()[0])
                 elif isinstance(feature, list):
-                    converted_features[preprocessor_id].extend(feature)
+                    current_features.extend(feature)
                 else:
-                    converted_features[preprocessor_id].append(feature)
+                    current_features.append(feature)
+                converted_features.append(current_features)
+
+                # Save the lengths if they are not already set
+                if not length_already_stored:
+                    if isinstance(feature, scipy.sparse.csr.csr_matrix):
+                        length = feature.shape[1]
+                    elif isinstance(feature, list):
+                        length = len(feature)
+                    else:
+                        length = 1
+
+                    self._preprocessors_output_lengths.append(length)
 
         # Apply a scalar
         if self._is_loaded:
@@ -243,3 +262,25 @@ class PreprocessingCore:
         self._last_scalar_model = joblib.load(scalar_model_filename)
 
         self._is_loaded = True
+
+    def split_preprocessed_features(
+            self, features: np.array) -> typing.List[typing.List]:
+        """Group the preprocessed features by their parent preprocessor.
+
+        Args:
+            features (np.array): Preprocessed features
+
+        Returns:
+            typing.List[typing.List]: Grouped features
+        """
+        if not self._preprocessors_output_lengths:
+            return None
+
+        current_position = 0
+        returned_list = []
+        for length in self._preprocessors_output_lengths:
+            returned_list.append(features[current_position:current_position
+                                          + length])
+            current_position += length
+
+        return returned_list

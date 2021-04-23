@@ -1,8 +1,8 @@
 import React from 'react';
 import {Helmet} from 'react-helmet';
 import PropTypes from 'prop-types';
-import APIWorker from './utils/api_worker';
-import {isModelNameValid} from './utils/common';
+import APIWorker from '../utils/api_worker';
+import {isModelNameValid} from '../utils/common';
 
 import {
   Badge,
@@ -27,10 +27,11 @@ import {Link, Redirect} from 'react-router-dom';
 import {IoChevronBack} from 'react-icons/io5';
 
 import 'react-bootstrap-range-slider/dist/react-bootstrap-range-slider.css';
-import './stylesheets/Evaluation.css';
+import '../stylesheets/Evaluation.css';
 
-import CONFIGURATION from './configuration/platform';
+import CONFIGURATION from '../configuration/platform';
 
+const ROUTES_CONFIGURATION = CONFIGURATION.routes;
 const DECIMALS_ACCURACY = CONFIGURATION.decimalsAccuracy;
 
 /**
@@ -435,7 +436,8 @@ class Evaluation extends React.Component {
     const isRegression = 'max_error' in evaluation;
     const step = 100 / evaluation.sampling_steps;
 
-    if (!isModelNameValid(modelName)) return <Redirect to="/settings" />;
+    if (!isModelNameValid(modelName))
+      return <Redirect to={ROUTES_CONFIGURATION.settings.name} />;
 
     return (
       <Container className="Evaluation">
@@ -445,7 +447,7 @@ class Evaluation extends React.Component {
 
         <Row className="menu">
           <Col>
-            <Link to="/">
+            <Link to={ROUTES_CONFIGURATION.default.name}>
               <Image
                 src={process.env.PUBLIC_URL + '/images/logo.png'}
                 className="logo"
@@ -453,7 +455,7 @@ class Evaluation extends React.Component {
             </Link>
           </Col>
           <Col>
-            <Link to="/settings">
+            <Link to={ROUTES_CONFIGURATION.settings.name}>
               <IoChevronBack className="action-button" />
             </Link>
           </Col>

@@ -46,7 +46,7 @@ class APIWorker {
    * Gets the evaluation of a model.
    *
    * @static
-   * @param {String} modelName Name of the model
+   * @param {string} modelName Name of the model
    * @param {Function} callback Function to call after the evaluation is received
    * @memberof APIWorker
    */
@@ -75,7 +75,7 @@ class APIWorker {
    * Gets the prediction configuration of a model.
    *
    * @static
-   * @param {String} modelName Name of the model
+   * @param {string} modelName Name of the model
    * @param {Function} callback Function to call after the configuration is received
    * @memberof APIWorker
    */
@@ -101,12 +101,43 @@ class APIWorker {
   }
 
   /**
+   * Gets the features of a file from the dataset.
+   *
+   * @static
+   * @param {string} modelName Name of the model
+   * @param {string} fileHash Hash of the file
+   * @param {Function} callback Function to call after the features are received
+   * @memberof APIWorker
+   */
+  static getFeatures(modelName, fileHash, callback) {
+    const route =
+      API_CONFIGURATION.routes.getFeatures + '/' + modelName + '/' + fileHash;
+
+    axios
+      .get(route, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        },
+      })
+      .then((response) => {
+        if (typeof callback === 'function') {
+          const data = response.data;
+
+          if (data) {
+            callback(data);
+          }
+        }
+      })
+      .catch((error) => console.error(error));
+  }
+
+  /**
    * Scans a file.
    *
    * @static
    * @param {string} modelName Name of the model
-   * @param {boolean} similarityAnalysisEnable Boolean indicating if the
-   *     similarity analysis is enabled
+   * @param {boolean} analystModeEnabled Boolean indicating if the analyst mode
+   *     is enabled
    * @param {number} similarCount Number of similar samples to return
    * @param {File} file File to scan
    * @param {number} checkingInterval Interval in seconds between two
@@ -116,7 +147,7 @@ class APIWorker {
    */
   static scanSample(
     modelName,
-    similarityAnalysisEnable,
+    analystModeEnabled,
     similarCount,
     file,
     checkingInterval,
@@ -126,7 +157,7 @@ class APIWorker {
     const formData = new FormData();
 
     formData.append('sample', file);
-    formData.append('similarity_analysis', Number(similarityAnalysisEnable));
+    formData.append('analyst_mode', Number(analystModeEnabled));
     if (similarCount) formData.append('similars_count', similarCount);
 
     axios
