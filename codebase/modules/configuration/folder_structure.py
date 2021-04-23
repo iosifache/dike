@@ -52,7 +52,9 @@ class Files:
     MALWARE_HASHES = Folders._DATA_DATASET_OTHERS + "malware_hashes.txt"
     VT_DATA_FILE = Folders._DATA_DATASET_OTHERS + "vt_data.csv"
     MODEL_DATASET_FMT = Folders.MODEL_FMT + "dataset.csv"
-    MODEL_FEATURES_FMT = Folders.MODEL_FMT + "features.csv"
+    MODEL_PREPROCESSED_FEATURES_FMT = (Folders.MODEL_FMT
+                                       + "preprocessed_features.csv")
+    MODEL_REDUCED_FEATURES_FMT = Folders.MODEL_FMT + "reduced_features.csv"
     MODEL_REDUCTION_MODEL_FMT = Folders.MODEL_FMT + "reduction.model"
     MODEL_PREPROCESSOR_MODEL_FMT = Folders.MODEL_PREPROCESSORS_FMT + "{}.model"
     MODEL_ML_MODEL_FMT = Folders.MODEL_FMT + "ml.model"

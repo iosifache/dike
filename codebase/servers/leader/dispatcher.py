@@ -518,7 +518,7 @@ class Dispatcher(object, metaclass=Singleton):
     def create_ticket(self,
                       model_name: str,
                       sample_filename: str,
-                      similarity_analysis: bool = False,
+                      analyst_mode: bool = False,
                       similar_count: int = 0) -> str:
         """Creates a new prediction ticket.
 
@@ -529,7 +529,7 @@ class Dispatcher(object, metaclass=Singleton):
 
         #noqa
         """
-        similarity_analysis = similarity_analysis == str(True)
+        analyst_mode = analyst_mode == str(True)
         similar_count = int(similar_count)
 
         if not os.path.isfile(sample_filename):
@@ -537,8 +537,7 @@ class Dispatcher(object, metaclass=Singleton):
         sample_file = open(sample_filename, "rb")
         sample = sample_file.read()
 
-        arguments = (model_name, sample, None, similarity_analysis,
-                     similar_count)
+        arguments = (model_name, sample, None, analyst_mode, similar_count)
         result, connection_id = self._delegate_task(Endpoint.CREATE_TICKET,
                                                     arguments,
                                                     return_connection_id=True)

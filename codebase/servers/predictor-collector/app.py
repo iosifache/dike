@@ -147,6 +147,32 @@ def get_configuration_route(model_name: str) -> str:
         return create_error_response(error)
 
 
+@app.route(ROUTES.GET_FEATURES + "/<string:model_name>/<string:file_hash>",
+           methods=["GET"])
+def get_features_route(model_name: str, file_hash: str) -> str:
+    """Gets the features of a file from the dataset.
+
+    Args:
+        model_name (str): Name of the model
+        file_hash (str): Hash of the file
+
+    Raises:
+        PredictionNotCalledFirstError: The prediction route was not called
+            before the feature getting one.
+
+    Returns:
+        str: JSON encapsulating the features
+    """
+    try:
+        result = model_management_core.get_file_features(model_name, file_hash)
+        if not result:
+            raise errors.PredictionNotCalledFirstError()
+
+        return create_success_response(result)
+    except errors.Error as error:
+        return create_error_response(error)
+
+
 @app.route(ROUTES.CREATE_TICKET + "/<string:model_name>", methods=["POST"])
 def create_ticket_route(model_name: str) -> str:
     """Predicts the objective value from the given file or features.
@@ -166,11 +192,9 @@ def create_ticket_route(model_name: str) -> str:
         str: JSON encapsulating the status and the ticket name
     """
     try:
-        # Get the similarity analysis parameters
-        similarity_analysis = request.form.get("similarity_analysis",
-                                               type=int,
-                                               default=0)
-        if similarity_analysis:
+        # Get the analyst mode parameters
+        analyst_mode = request.form.get("analyst_mode", type=int, default=0)
+        if analyst_mode:
             similar_count = request.form.get("similars_count", type=int)
             if similar_count == 0:
                 raise errors.InvalidSimilarCountError()
@@ -189,7 +213,7 @@ def create_ticket_route(model_name: str) -> str:
             sample.save(temp_sample.name)
 
             prediction_args = (model_name, temp_sample.name, None,
-                               similarity_analysis, similar_count, True)
+                               analyst_mode, similar_count, True)
 
         elif "features" in request.form:
             # Get the features
@@ -199,13 +223,13 @@ def create_ticket_route(model_name: str) -> str:
             except Exception:
                 raise errors.InvalidSerializedFeaturesError()
 
-            prediction_args = (model_name, None, features, similarity_analysis,
+            prediction_args = (model_name, None, features, analyst_mode,
                                similar_count)
         else:
             raise errors.NoSampleToScanError()
 
         # Create a new ticket
-        ticket_name = model_management_core.create_ticket()
+        ticket_name = model_management_core.create_ticket(model_name)
 
         # Create a new thread for prediction
         prediction_args = (ticket_name, ) + prediction_args

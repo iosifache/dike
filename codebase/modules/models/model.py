@@ -62,6 +62,7 @@ class Model:
 
     _is_ready: bool
     _is_unchanged: bool
+    _configuration: dict
     _configuration_filename: str
     _dataset_filename: str
     _extractors_types: typing.List[ExtractorsTypes]
@@ -76,6 +77,7 @@ class Model:
     _reduction_model: BaseEstimator
     _ml_model: BaseEstimator
     _split_ratio: float
+    _preprocessed_features: np.array
     _reduced_features: np.array
     _model_unique_name: str
     _evaluation_results: dict
@@ -84,6 +86,7 @@ class Model:
         """Initializes the Model instance."""
         self._is_ready = False
         self._is_unchanged = False
+        self._configuration = None
         self._configuration_filename = None
         self._dataset_filename = None
         self._extractors_types = []
@@ -98,6 +101,7 @@ class Model:
         self._reduction_model = None
         self._ml_model = None
         self._split_ratio = None
+        self._preprocessed_features = None
         self._reduced_features = None
         self._model_unique_name = None
         self._evaluation_results = None
@@ -109,6 +113,7 @@ class Model:
                 configuration = yaml.load(config_file, Loader=yaml.SafeLoader)
         except Exception:
             raise errors.ModelConfigurationFileNotFoundError()
+        self._configuration = configuration
 
         # Check if the main keys are present
         valid_keys = [
@@ -305,7 +310,7 @@ class Model:
                 extraction_errors_indexes.append(entry_id)
 
         # Apply the preprocessors
-        preprocessed_features = self._preprocessing_core.preprocess(
+        self._preprocessed_features = self._preprocessing_core.preprocess(
             raw_features)
 
         # Apply the dimensionality reduction algorithm
@@ -316,7 +321,7 @@ class Model:
         elif self._reduction_algorithm == ReductionAlgorithm.NMF:
             self._reduction_model = NMF(n_components=self._min_variance)
         self._reduced_features = self._reduction_model.fit_transform(
-            preprocessed_features)
+            self._preprocessed_features)
 
         # Get the labels and remove the entries where extraction errors occurred
         if self._model_objective == ModelObjective.MALICE:
@@ -408,10 +413,52 @@ class Model:
         """
         self._base_train()
 
+    def _beautify_features(self, features: list) -> list:
+        features = self._preprocessing_core.split_preprocessed_features(
+            features)
+        if not features:
+            return None
+
+        pairs = self._configuration[
+            CONFIGURATION_KEYS.EXTRACTORS_PREPROCESSORS.value]
+        returned_list = []
+
+        feature_index = 0
+        for pair in pairs:
+            # Get the selected extractor and preprocessor
+            extractor = (list(pair.keys()))[0]
+            corresponding_preprocessors = pair[extractor]
+
+            # Get the descriptions of the features
+            extractor_class = ExtractionCore.load_extractor_by_name(
+                ExtractorsTypes[extractor].value)
+            feature_types = extractor_class.get_feature_types()
+
+            # Save each preprocessor output
+            extractor_list = []
+            for feature_type, preprocessor in zip(feature_types,
+                                                  corresponding_preprocessors):
+                feature = features[feature_index]
+                feature_index += 1
+
+                extractor_list.append({
+                    "meaning": feature_type[0],
+                    "preprocessor": preprocessor,
+                    "features": feature
+                })
+
+            # Save the outputs of this extractor
+            returned_list.append({
+                "extractor": extractor,
+                "features": extractor_list
+            })
+
+        return returned_list
+
     def predict(self,
                 filename: str = None,
                 features: typing.Any = None,
-                similarity_analysis: bool = False,
+                analyst_mode: bool = False,
                 similar_count: int = 0) -> dict:
         """Predicts the malice or the memberships to malware categories.
 
@@ -430,8 +477,8 @@ class Model:
                 made
             features(typing.Any, optional): Already extracted raw features of
                 the file
-            similarity_analysis (bool): Boolean indicating if a similarity
-                analysis needs to be done. Defaults to False.
+            analyst_mode (bool): Boolean indicating if the analyst mode is
+                enabled. Defaults to False.
             similar_count (int): Number of similar samples to return. Defaults
                 to 0, if the similarity analysis is disabled.
 
@@ -460,8 +507,23 @@ class Model:
         # Predict the results with the machine learning algorithm
         result = self._ml_model.predict(reduced_features)
 
-        # Detect the most similar samples in the dataframe
-        if similarity_analysis:
+        # Build the result
+        returned_result = {}
+        if self._model_objective == ModelObjective.MALICE:
+            returned_result["malice"] = result[0]
+        elif self._model_objective == ModelObjective.CLASSIFICATION:
+            labels = list(self._dataset.columns)[3:]
+            normalized_memberships = normalize([result[0]], "l1")[0]
+            returned_result["memberships"] = dict(
+                zip(labels, normalized_memberships))
+        if analyst_mode:
+
+            # Beautify the features
+            beautified_features = self._beautify_features(
+                preprocessed_features[0].tolist())
+            returned_result["features"] = beautified_features
+
+            # Detect the most similar samples in the dataframe
             reduced_features_df = pandas.DataFrame(self._reduced_features)
             reduced_features_sr = pandas.Series(reduced_features[0])
             correlations = reduced_features_df.corrwith(reduced_features_sr,
@@ -470,23 +532,27 @@ class Model:
             similarities = correlations[:similar_count]
             indexes = correlations.index[:similar_count]
             similar_samples = self._dataset.iloc[indexes]["hash"].values
-
-        # Build the result
-        returned_result = dict()
-        if self._model_objective == ModelObjective.MALICE:
-            returned_result["malice"] = result[0]
-        elif self._model_objective == ModelObjective.CLASSIFICATION:
-            labels = list(self._dataset.columns)[3:]
-            normalized_memberships = normalize([result[0]], "l1")[0]
-            returned_result["memberships"] = dict(
-                zip(labels, normalized_memberships))
-        if similarity_analysis:
             returned_result["similar"] = [{
                 "hash": details[0],
                 "similarity": details[1]
             } for details in zip(similar_samples, similarities)]
 
         return returned_result
+
+    def get_file_features(self, file_hash: str) -> dict:
+        """Gets the features of a file from the dataset.
+
+        Args:
+            file_hash (str): Hash of the file
+
+        Returns:
+            dict: Dictionary containing the features
+        """
+        index = int(self._dataset[self._dataset['hash'] == file_hash].index[0])
+        features = self._beautify_features(
+            self._preprocessed_features[index].tolist())
+
+        return {"features": features} if features else None
 
     def dump(self) -> str:
         """Dumps the trained components (models).
@@ -539,8 +605,18 @@ class Model:
         # Dump the preprocessors
         self._preprocessing_core.dump(self._model_unique_name)
 
-        # Dump the preprocessed and reduced features
-        reduced_features_path = Files.MODEL_FEATURES_FMT.format(
+        # Dump the preprocessed features
+        used_format = Files.MODEL_PREPROCESSED_FEATURES_FMT
+        preprocessed_features_path = used_format.format(
+            self._model_unique_name)
+        preprocessed_features_df = pandas.DataFrame(
+            self._preprocessed_features)
+        preprocessed_features_df.to_csv(preprocessed_features_path,
+                                        header=False,
+                                        index=False)
+
+        # Dump the reduced features
+        reduced_features_path = Files.MODEL_REDUCED_FEATURES_FMT.format(
             self._model_unique_name)
         reduced_features_df = pandas.DataFrame(self._reduced_features)
         reduced_features_df.to_csv(reduced_features_path,
@@ -635,8 +711,17 @@ class Model:
         preprocessors_count = sum(map(len, self._preprocessors_types))
         self._preprocessing_core.load(model_name, preprocessors_count)
 
+        # Load the preprocessed features
+        used_format = Files.MODEL_PREPROCESSED_FEATURES_FMT
+        preprocessed_features_path = used_format.format(model_name)
+        preprocessed_features_df = pandas.read_csv(preprocessed_features_path,
+                                                   header=None,
+                                                   index_col=False)
+        self._preprocessed_features = preprocessed_features_df.values
+
         # Load the reduced features
-        reduced_features_path = Files.MODEL_FEATURES_FMT.format(model_name)
+        reduced_features_path = Files.MODEL_REDUCED_FEATURES_FMT.format(
+            model_name)
         reduced_features_df = pandas.read_csv(reduced_features_path,
                                               header=None,
                                               index_col=False)
