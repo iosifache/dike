@@ -1,0 +1,18 @@
+file_extension: exe
+entries_count: 1000
+
+min_malice: 0.9
+desired_families:
+  - generic
+  - trojan
+  - ransomware
+  - worm
+  - backdoor
+  - spyware
+  - rootkit
+  - encrypter
+  - downloader
+benign_ratio: 0.5
+
+output_filename: large_pe.csv
+description: Small dataset with benign and malicious PE samples

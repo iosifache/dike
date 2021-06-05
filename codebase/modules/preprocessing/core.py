@@ -2,8 +2,9 @@
 
 Usage example:
 
-    # Create a core for preprocessing and attach a core
-    core = PreprocessingCore()
+    # Create a core for preprocessing, with PCA as a dimensional reduction
+    # algorithm, and attach a core
+    core = PreprocessingCore(ReductionAlgorithm.PCA, 10)
     core.attach(PreprocessorsTypes.IDENTITY)
 
     # Process data
@@ -22,9 +23,12 @@ from modules.preprocessing.preprocessors import (Counter, CountVectorizer,
                                                  GroupCounter, Identity,
                                                  NGrams, Preprocessor,
                                                  SameLengthImputer)
-from modules.preprocessing.types import Charset, PreprocessorsTypes
+from modules.preprocessing.types import (Charset, PreprocessorsTypes,
+                                         ReductionAlgorithm)
 from modules.utils.configuration_manager import ConfigurationManager
 from modules.utils.types import ConfigurationSpaces
+from sklearn.base import BaseEstimator
+from sklearn.decomposition import NMF, PCA, FastICA
 from sklearn.preprocessing import Binarizer, KBinsDiscretizer, MinMaxScaler
 
 
@@ -38,20 +42,34 @@ class PreprocessingCore:
     _columns_to_be_filled: list
     _last_scalar_model: MinMaxScaler
     _preprocessors_output_lengths: list
+    _reduction_model: BaseEstimator
+    _reduction_algorithm: str
+    _reduction_components_count: float
 
-    def __init__(self) -> None:
-        """Initializes the PreprocessingCore instance."""
+    def __init__(self, algorithm: ReductionAlgorithm,
+                 components_count: int) -> None:
+        """Initializes the PreprocessingCore instance.
+
+        Args:
+            algorithm (ReductionAlgorithm): Dimensionality reduction algorithm
+            components_count (int): Number of components to return. If the
+                algorithm is PCA, then this parameter can be the minimum
+                variance of the returned components.
+        """
         configuration = ConfigurationManager()
         self._extractors_config = configuration.get_space(
             ConfigurationSpaces.FEATURES)
         self._preprocessors_config = configuration.get_space(
             ConfigurationSpaces.PREPROCESSING)
+        self._reduction_algorithm = algorithm
+        self._reduction_components_count = components_count
 
         self._is_loaded = False
         self._preprocessors = []
         self._columns_to_be_filled = []
         self._last_scalar_model = None
         self._preprocessors_output_lengths = []
+        self._reduction_model = None
 
     def attach(self,
                preprocessor_type: PreprocessorsTypes,
@@ -153,14 +171,15 @@ class PreprocessingCore:
         # length
         return SameLengthImputer(desired_length).fit_transform(matrix)
 
-    def preprocess(self, matrix: np.array) -> np.array:
+    def preprocess(self, matrix: np.array) -> typing.Tuple[np.array, np.array]:
         """Preprocesses the given features.
 
         Args:
             matrix (np.array): Raw features
 
         Returns:
-            np.array: Preprocessed features
+            typing.Tuple[np.array, np.array]: Tuple of preprocessed and reduced
+                features
         """
         # Impute values for some preprocessors
         matrix = self._impute_values(matrix)
@@ -200,7 +219,6 @@ class PreprocessingCore:
                     current_features.extend(feature)
                 else:
                     current_features.append(feature)
-                converted_features.append(current_features)
 
                 # Save the lengths if they are not already set
                 if not length_already_stored:
@@ -213,6 +231,8 @@ class PreprocessingCore:
 
                     self._preprocessors_output_lengths.append(length)
 
+            converted_features.append(current_features)
+
         # Apply a scalar
         if self._is_loaded:
             converted_features = self._last_scalar_model.transform(
@@ -224,7 +244,25 @@ class PreprocessingCore:
             converted_features = self._last_scalar_model.fit_transform(
                 converted_features)
 
-        return converted_features
+        # Create a model if one is not loaded
+        if not self._is_loaded:
+            if self._reduction_algorithm == ReductionAlgorithm.PCA:
+                self._reduction_model = PCA(
+                    n_components=self._reduction_components_count)
+            elif self._reduction_algorithm == ReductionAlgorithm.FAST_ICA:
+                self._reduction_model = FastICA(
+                    n_components=self._reduction_components_count)
+            elif self._reduction_algorithm == ReductionAlgorithm.NMF:
+                self._reduction_model = NMF(
+                    n_components=self._reduction_components_count)
+
+            reduced_features = self._reduction_model.fit_transform(
+                converted_features)
+        else:
+            reduced_features = self._reduction_model.transform(
+                converted_features)
+
+        return (converted_features, reduced_features)
 
     def dump(self, model_name: str) -> None:
         """Dumps the preprocessors and the scalar to files.
@@ -243,6 +281,11 @@ class PreprocessingCore:
             model_name, Packages.Models.Training.SCALAR_MODEL_NAME)
         joblib.dump(self._last_scalar_model, filename)
 
+        # Dump the dimensionality reduction model
+        reduction_model_path = Files.MODEL_REDUCTION_MODEL_FMT.format(
+            model_name)
+        joblib.dump(self._reduction_model, reduction_model_path)
+
     def load(self, model_name: str, preprocessors_count: int) -> None:
         """Loads the preprocessor and the scalar from a file.
 
@@ -260,6 +303,11 @@ class PreprocessingCore:
         scalar_model_filename = Files.MODEL_PREPROCESSOR_MODEL_FMT.format(
             model_name, Packages.Models.Training.SCALAR_MODEL_NAME)
         self._last_scalar_model = joblib.load(scalar_model_filename)
+
+        # Load the dimensionality reduction model
+        reduction_model_path = Files.MODEL_REDUCTION_MODEL_FMT.format(
+            model_name)
+        self._reduction_model = joblib.load(reduction_model_path)
 
         self._is_loaded = True
 

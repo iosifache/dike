@@ -32,7 +32,7 @@ class ModelsEvaluator:
 
         The returned metrics, as keys into the returned dictionary, are:
         - maximum error ("max_error" key);
-        - mean average error ("mean_average_error" key);
+        - mean absolute error ("mean_absolute_error" key);
         - root mean squared error ("root_mean_squared_error" key);
         - R squared score ("r2_score" key); and
         - errors histogram ("errors_histogram"), containing:
@@ -50,7 +50,7 @@ class ModelsEvaluator:
 
         # Get the generic errors and scores
         results["max_error"] = max_error(y_real, y_pred)
-        results["mean_average_error"] = mean_absolute_error(y_real, y_pred)
+        results["mean_absolute_error"] = mean_absolute_error(y_real, y_pred)
         results["root_mean_squared_error"] = math.sqrt(
             mean_squared_error(y_real, y_pred))
         results["r2_score"] = r2_score(y_real, y_pred)

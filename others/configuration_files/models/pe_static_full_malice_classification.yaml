@@ -1,0 +1,30 @@
+dataset:
+    filename: pe_backdoor_vs_encrypter.csv
+
+model_details:
+    objective: CLASSIFICATION
+
+extractors_preprocessors:
+    - STATIC_STRINGS:
+          - N_GRAMS
+    - STATIC_PE_CHARACTERISTICS:
+          - IDENTITY
+          - COUNT_VECTORIZER
+          - COUNT_VECTORIZER
+          - COUNTER
+          - N_GRAMS
+          - K_BINS_DISCRETIZER
+          - K_BINS_DISCRETIZER
+          - K_BINS_DISCRETIZER
+    - STATIC_OPCODES:
+          - GROUP_COUNTER
+    - STATIC_APIS:
+          - GROUP_COUNTER
+
+dimensionality_reduction:
+    algorithm: PCA
+    components_count: 0.999999
+
+machine_learning:
+    algorithm: RANDOM_FOREST
+    split_ratio: 0.8

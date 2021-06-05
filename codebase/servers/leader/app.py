@@ -623,8 +623,8 @@ def create_ticket(model_name: str,
     """
     if result is not None:
         if result:
-            Logger().log(("The prediction for the sample started."
-                          "The result can be retrieved via the ticket {}"
+            Logger().log(("The prediction for the sample started. "
+                          "The result can be retrieved via the ticket {}."
                           ).format(result), LoggedMessageTypes.SUCCESS)
         else:
             Logger().log("The prediction for the sample could not be started.",

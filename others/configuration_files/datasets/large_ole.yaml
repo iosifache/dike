@@ -1,0 +1,18 @@
+file_extension: ole
+entries_count: 600
+
+min_malice: 0.7
+desired_families:
+  - generic
+  - trojan
+  - ransomware
+  - worm
+  - backdoor
+  - spyware
+  - rootkit
+  - encrypter
+  - downloader
+benign_ratio: 0.1
+
+output_filename: large_ole.csv
+description: Large dataset with benign and malicious OLE samples

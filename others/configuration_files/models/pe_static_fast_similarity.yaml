@@ -1,18 +1,16 @@
 dataset:
-    filename: pe_malice.csv
+    filename: tiny_pe.csv
 
 model_details:
     objective: MALICE
 
 extractors_preprocessors:
-    - STATIC_OPCODES:
-        - GROUP_COUNTER
-    - STATIC_APIS:
-        - GROUP_COUNTER
+    - STATIC_STRINGS:
+          - N_GRAMS
 
 dimensionality_reduction:
     algorithm: PCA
-    min_variance: 0.999999
+    components_count: 0.999999
 
 machine_learning:
     algorithm: RANDOM_FOREST

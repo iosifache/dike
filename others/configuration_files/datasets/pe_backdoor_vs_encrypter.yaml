@@ -1,5 +1,5 @@
 file_extension: exe
-entries_count: 1000
+entries_count: 200
 
 min_malice: 0.8
 desired_families:
@@ -8,4 +8,4 @@ desired_families:
 benign_ratio: 0
 
 output_filename: pe_backdoor_vs_encrypter.csv
-description: Dataset for differentiate between backdoor and encrypter PE samples
+description: Small dataset with backdoor and encrypter PE samples

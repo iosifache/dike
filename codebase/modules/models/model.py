@@ -32,22 +32,19 @@ from modules.dataset.types import AnalyzedFileTypes
 from modules.features.core import ExtractionCore
 from modules.features.types import ExtractorsTypes
 from modules.models.evaluation import ModelsEvaluator
-from modules.models.types import (ModelObjective, ReductionAlgorithm,
-                                  RegressionAlgorithms)
+from modules.models.types import ModelObjective, RegressionAlgorithms
 from modules.preprocessing.core import PreprocessingCore
-from modules.preprocessing.types import PreprocessorsTypes
+from modules.preprocessing.types import PreprocessorsTypes, ReductionAlgorithm
 from modules.utils.configuration_manager import ConfigurationManager
 from modules.utils.crypto import HashingEngine
 from modules.utils.logger import Logger
 from modules.utils.types import ConfigurationSpaces, LoggedMessageTypes
 from sklearn.base import BaseEstimator
-from sklearn.decomposition import NMF, PCA, FastICA
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_validate, train_test_split
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.preprocessing import normalize
-from sklearn.svm import LinearSVC
+from sklearn.svm import LinearSVR
 from sklearn.tree import DecisionTreeRegressor
 
 TRAINING_CONFIG = Packages.Models.Training
@@ -69,12 +66,11 @@ class Model:
     _preprocessors_types: typing.List[typing.List[PreprocessorsTypes]]
     _model_objective: ModelObjective
     _reduction_algorithm: ReductionAlgorithm
-    _min_variance: float
+    _components_count: float
     _ml_algorithm: Enum
     _dataset: pandas.DataFrame
     _extraction_core: ExtractionCore
     _preprocessing_core: PreprocessingCore
-    _reduction_model: BaseEstimator
     _ml_model: BaseEstimator
     _split_ratio: float
     _preprocessed_features: np.array
@@ -93,12 +89,11 @@ class Model:
         self._preprocessors_types = []
         self._model_objective = None
         self._reduction_algorithm = None
-        self._min_variance = 0
+        self._components_count = 0
         self._ml_algorithm = None
         self._dataset = None
         self._extraction_core = None
         self._preprocessing_core = None
-        self._reduction_model = None
         self._ml_model = None
         self._split_ratio = None
         self._preprocessed_features = None
@@ -163,8 +158,8 @@ class Model:
         try:
             self._reduction_algorithm = ReductionAlgorithm[reduction_config[
                 CONFIGURATION_KEYS.DIMENSIONALITY_REDUCTION_ALGORITHM_.value]]
-            self._min_variance = reduction_config[
-                CONFIGURATION_KEYS.DIMENSIONALITY_REDUCTION_MIN_VARIANCE_.
+            self._components_count = reduction_config[
+                CONFIGURATION_KEYS.DIMENSIONALITY_REDUCTION_COMPONENTS_COUNT_.
                 value]
         except KeyError:
             raise errors.InvalidReductionAlgorithmError()
@@ -241,7 +236,8 @@ class Model:
             return False
 
         # Create the preprocessors core
-        self._preprocessing_core = PreprocessingCore()
+        self._preprocessing_core = PreprocessingCore(self._reduction_algorithm,
+                                                     self._components_count)
 
         # Attach the preprocessors
         if attach_preprocessors:
@@ -257,9 +253,7 @@ class Model:
             self._extraction_core.attach(extractor_type)
 
         # Load the dataset
-        self._dataset = pandas.read_csv(self._dataset_filename,
-                                        index_col=False,
-                                        skiprows=1)
+        self._dataset = DatasetCore.read_dataset(self._dataset_filename)
 
         # Set the core as loaded
         self._is_ready = True
@@ -309,19 +303,9 @@ class Model:
             except Exception:
                 extraction_errors_indexes.append(entry_id)
 
-        # Apply the preprocessors
-        self._preprocessed_features = self._preprocessing_core.preprocess(
-            raw_features)
-
-        # Apply the dimensionality reduction algorithm
-        if self._reduction_algorithm == ReductionAlgorithm.PCA:
-            self._reduction_model = PCA(n_components=self._min_variance)
-        elif self._reduction_algorithm == ReductionAlgorithm.FAST_ICA:
-            self._reduction_model = FastICA(n_components=self._min_variance)
-        elif self._reduction_algorithm == ReductionAlgorithm.NMF:
-            self._reduction_model = NMF(n_components=self._min_variance)
-        self._reduced_features = self._reduction_model.fit_transform(
-            self._preprocessed_features)
+        # Apply the preprocessors and the dimensionality reduction
+        features = self._preprocessing_core.preprocess(raw_features)
+        self._preprocessed_features, self._reduction_algorithm = features
 
         # Get the labels and remove the entries where extraction errors occurred
         if self._model_objective == ModelObjective.MALICE:
@@ -338,13 +322,11 @@ class Model:
             y = y.values
 
         # Create the model
-        if self._ml_algorithm == RegressionAlgorithms.LOGISTIC:
-            regression_model = LogisticRegression()
-        elif self._ml_algorithm == RegressionAlgorithms.DECISION_TREE:
+        if self._ml_algorithm == RegressionAlgorithms.DECISION_TREE:
             regression_model = DecisionTreeRegressor()
         elif (self._ml_algorithm ==
               RegressionAlgorithms.LINEAR_SUPPORT_VECTOR_MACHINE):
-            regression_model = LinearSVC()
+            regression_model = LinearSVR()
         elif self._ml_algorithm == RegressionAlgorithms.RANDOM_FOREST:
             regression_model = RandomForestRegressor()
 
@@ -491,19 +473,17 @@ class Model:
             return None
 
         # Extract the features from the file
-        try:
-            raw_features = self._extraction_core.squeeze(filename)
-        except errors.Error:
-            return None
+        if filename:
+            try:
+                raw_features = self._extraction_core.squeeze(filename)
+            except errors.Error:
+                return None
+        else:
+            raw_features = features
 
         # Apply the preprocessors and the dimensionality reduction algorithm
-        if filename:
-            preprocessed_features = self._preprocessing_core.preprocess(
-                [raw_features])
-        else:
-            preprocessed_features = features
-        reduced_features = self._reduction_model.transform(
-            preprocessed_features)
+        features = self._preprocessing_core.preprocess([raw_features])
+        (preprocessed_features, reduced_features) = features
 
         # Predict the results with the machine learning algorithm
         result = self._ml_model.predict(reduced_features)
@@ -591,11 +571,6 @@ class Model:
         # Copy the dataset
         dataset_path = Files.MODEL_DATASET_FMT.format(self._model_unique_name)
         shutil.copyfile(self._dataset_filename, dataset_path)
-
-        # Dump the dimensionality reduction model
-        reduction_model_path = Files.MODEL_REDUCTION_MODEL_FMT.format(
-            self._model_unique_name)
-        joblib.dump(self._reduction_model, reduction_model_path)
 
         # Dump the machine learning model
         ml_model_path = Files.MODEL_ML_MODEL_FMT.format(
@@ -697,11 +672,6 @@ class Model:
 
         # Initialize components
         self._load_models_components(self._configuration_filename, False, True)
-
-        # Load the dimensionality reduction model
-        reduction_model_path = Files.MODEL_REDUCTION_MODEL_FMT.format(
-            model_name)
-        self._reduction_model = joblib.load(reduction_model_path)
 
         # Load the machine learning model
         ml_model_path = Files.MODEL_ML_MODEL_FMT.format(model_name)

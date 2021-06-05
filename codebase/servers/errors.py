@@ -27,6 +27,10 @@ class InvalidNetworkError(Error):
     """The given network, in CIDR notation, is invalid."""
 
 
+class DroppedCommandError(Error):
+    """The current command was dropped due to timeout or internal error."""
+
+
 class NoSampleToScanError(Error):
     """No sample to scan was provided."""
 

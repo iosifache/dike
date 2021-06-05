@@ -1,0 +1,37 @@
+dataset:
+    filename: small_ole.csv
+
+model_details:
+    objective: MALICE
+
+extractors_preprocessors:
+    - GENERAL_OLE_DETAILS:
+          - N_GRAMS
+          - IDENTITY
+          - IDENTITY
+          - IDENTITY
+          - IDENTITY
+          - IDENTITY
+          - IDENTITY
+          - IDENTITY
+          - IDENTITY
+          - IDENTITY
+          - IDENTITY
+          - IDENTITY
+          - IDENTITY
+          - IDENTITY
+          - IDENTITY
+          - IDENTITY
+          - N_GRAMS
+          - K_BINS_DISCRETIZER
+          - IDENTITY
+    - OLE_MACROS:
+          - N_GRAMS
+
+dimensionality_reduction:
+    algorithm: PCA
+    components_count: 0.999999
+
+machine_learning:
+    algorithm: RANDOM_FOREST
+    split_ratio: 0.8

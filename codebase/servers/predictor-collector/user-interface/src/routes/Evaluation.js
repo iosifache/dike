@@ -137,7 +137,7 @@ class Evaluation extends React.Component {
     /* eslint-disable camelcase */
     const {
       max_error,
-      mean_average_error,
+      mean_absolute_error,
       root_mean_squared_error,
       r2_score,
       errors_histogram,
@@ -166,8 +166,8 @@ class Evaluation extends React.Component {
                 <td>{max_error.toFixed(DECIMALS_ACCURACY)}</td>
               </tr>
               <tr>
-                <td>Mean Average Error</td>
-                <td>{mean_average_error.toFixed(DECIMALS_ACCURACY)}</td>
+                <td>Mean Absolute Error</td>
+                <td>{mean_absolute_error.toFixed(DECIMALS_ACCURACY)}</td>
               </tr>
               <tr>
                 <td>Root Mean Squared Error</td>
@@ -280,11 +280,14 @@ class Evaluation extends React.Component {
     const recall = classificationData.recalls[index];
     const matthewsCoefficient = classificationData.matthews_coefficients[index];
 
-    const pieData = [];
+    // Check if the matrix contains only the true positives, in case of accuracy
+    // of 1
     if (confusionMatrix.length === 1) {
       confusionMatrix[0].push(0);
       confusionMatrix.push([0, 0]);
     }
+
+    const pieData = [];
     for (let i = 0; i < confusionMatrix.length; i++) {
       const line = confusionMatrix[i];
 

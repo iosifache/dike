@@ -243,6 +243,18 @@ class DatasetCore:
         return datasets_details
 
     @staticmethod
+    def read_dataset(dataset_path: str) -> pandas.DataFrame:
+        """Reads a stock dataset or a custom one.
+
+        Args:
+            dataset_path (str): Path of the dataset
+
+        Returns:
+            pandas.DataFrame: Read dataset
+        """
+        return pandas.read_csv(dataset_path, index_col=False, skiprows=1)
+
+    @staticmethod
     def remove_dataset(dataset_name: str) -> None:
         """Removes a created dataset.
 
@@ -257,7 +269,8 @@ class DatasetCore:
                            file_type: AnalyzedFileTypes,
                            file_hash: str,
                            malice: float = None,
-                           memberships: typing.List[float] = None) -> bool:
+                           memberships: typing.List[float] = None,
+                           is_parent: bool = False) -> bool:
         """Publishes data about an existent sample or a new one in a dataset.
 
         Args:
@@ -269,6 +282,8 @@ class DatasetCore:
             memberships (typing.List[float]): Array containing the memberships
                 of the file to malware families. Defaults to None, if only the
                 malice is updated.
+            is_parent (bool): Boolean indicating if the publishing is in the
+                main dataset
 
         Returns:
             bool: Boolean indicating if the updated file already existed in the
@@ -351,5 +366,11 @@ class DatasetCore:
         metadata["entries_count"] = entries_count
         metadata["benign_ratio"] = benign_count / entries_count
         DatasetCore._dump_metadata(dataset_full_path, metadata)
+
+        # Checl if the details needs to be published into the main dataset toos
+        if not is_parent:
+            DatasetCore.publish_to_dataset(Files.MALWARE_LABELS, file_type,
+                                           file_hash, malice, memberships,
+                                           True)
 
         return exists

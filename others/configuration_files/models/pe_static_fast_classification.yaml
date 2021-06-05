@@ -3,24 +3,23 @@ dataset:
 
 model_details:
     objective: CLASSIFICATION
-    retraining_needed: True
 
 extractors_preprocessors:
     - STATIC_STRINGS:
-        - N_GRAMS
+          - N_GRAMS
     - STATIC_PE_CHARACTERISTICS:
-        - IDENTITY
-        - COUNT_VECTORIZER
-        - COUNT_VECTORIZER
-        - COUNTER
-        - N_GRAMS
-        - K_BINS_DISCRETIZER
-        - K_BINS_DISCRETIZER
-        - K_BINS_DISCRETIZER
+          - IDENTITY
+          - COUNT_VECTORIZER
+          - COUNT_VECTORIZER
+          - COUNTER
+          - N_GRAMS
+          - K_BINS_DISCRETIZER
+          - K_BINS_DISCRETIZER
+          - K_BINS_DISCRETIZER
 
 dimensionality_reduction:
     algorithm: PCA
-    min_variance: 0.999999
+    components_count: 0.999999
 
 machine_learning:
     algorithm: RANDOM_FOREST
