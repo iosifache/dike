@@ -75,7 +75,7 @@ class Packages:
             EXTRACTORS_PREPROCESSORS = "extractors_preprocessors"
             DIMENSIONALITY_REDUCTION = "dimensionality_reduction"
             DIMENSIONALITY_REDUCTION_ALGORITHM_ = "algorithm"
-            DIMENSIONALITY_REDUCTION_MIN_VARIANCE_ = "min_variance"
+            DIMENSIONALITY_REDUCTION_COMPONENTS_COUNT_ = "components_count"
             MACHINE_LEARNING = "machine_learning"
             MACHINE_LEARNING_ALGORITHM_ = "algorithm"
             MACHINE_LEARNING_SPLIT_RADIO_ = "split_ratio"

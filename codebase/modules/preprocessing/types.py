@@ -23,3 +23,11 @@ class PreprocessorsTypes(Enum):
     N_GRAMS = "NGrams"
     GROUP_COUNTER = "GroupCounter"
     SAME_LENGTH_IMPUTER = "SameLengthImputer"
+
+
+class ReductionAlgorithm(Enum):
+    """Enumeration for all dimensionality reduction algorithms."""
+
+    PCA = "PCA"
+    FAST_ICA = "FastICA"
+    NMF = "NMF"

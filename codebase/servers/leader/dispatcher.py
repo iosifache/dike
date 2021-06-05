@@ -84,6 +84,7 @@ class Dispatcher(object, metaclass=Singleton):
 
         self._connections = []
         self._answers = []
+        self._last_used_server_id = -1
         self._stop_needed = False
         self._created_tickets = []
         self._model_retrainings = dict()
@@ -130,9 +131,18 @@ class Dispatcher(object, metaclass=Singleton):
     def _get_first_free_server(self) -> typing.Tuple[int, _Connection]:
         self._refresh_connections_states()
 
-        for index, connection in enumerate(self._connections):
+        # Rotate a vector of IDs to behave like a Round Robin
+        indexes_list = list(range(0, len(self._connections)))
+        last_id = self._last_used_server_id
+        indexes_list = indexes_list[last_id + 1:] + indexes_list[:last_id + 1]
+
+        for index in indexes_list:
+            connection = self._connections[index]
             if connection.employment.value == Employment.AVAILABLE.value:
                 connection.employment = Employment.GENERIC_EMPLOYMENT
+
+                # Remind the server as last used
+                self._last_used_server_id = index
 
                 return (index, connection)
 
@@ -174,7 +184,10 @@ class Dispatcher(object, metaclass=Singleton):
         # Call the function
         is_async = method.value[1]
         if not is_async:
-            result = wanted_function(*arguments)
+            try:
+                result = wanted_function(*arguments)
+            except Exception:
+                raise errors.DroppedCommandError()
         else:
             async_result = rpyc.async_(wanted_function)(*arguments)
 
