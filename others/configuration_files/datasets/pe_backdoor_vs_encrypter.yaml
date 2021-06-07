@@ -3,8 +3,8 @@ entries_count: 200
 
 min_malice: 0.8
 desired_families:
-  - backdoor
-  - encrypter
+    - backdoor
+    - encrypter
 benign_ratio: 0
 
 output_filename: pe_backdoor_vs_encrypter.csv
