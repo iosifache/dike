@@ -1,9 +1,23 @@
 dataset:
+    # Type: String
+    # Meaning: Name of the used dataset
+    # Possible values: String ended with a ".csv" extension
     filename: small_ole.csv
 
 model_details:
+    # Type: String
+    # Meaning: Objective of the model
+    # Possible values: "MALICE", "CLASSIFICATION"
     objective: MALICE
 
+    # Type: Boolean
+    # Meaning: Activation status of the retraining
+    # Possible values: "True", "False"
+    retraining: False
+
+# Type: Nested lists
+# Meaning: Combination of extractors and their preprocessors
+# Possible values: All implemented extractors and preprocessors
 extractors_preprocessors:
     - GENERAL_OLE_DETAILS:
           - N_GRAMS
@@ -29,9 +43,23 @@ extractors_preprocessors:
           - N_GRAMS
 
 dimensionality_reduction:
+    # Type: String
+    # Meaning: Dimensionality reduction algorithm
+    # Possible values: All implemented algorithms
     algorithm: PCA
+
+    # Type: Integer or float
+    # Meaning: Number of components to return or included variation (PCA-only)
+    # Possible values: Between 0 and the number of the extracted features
     components_count: 0.999999
 
 machine_learning:
+    # Type: String
+    # Meaning: Machine learning algorithm
+    # Possible values: All implemented algorithms
     algorithm: RANDOM_FOREST
+
+    # Type: Float
+    # Meaning: Ratio of samples used for training
+    # Possible values: Between 0 and 1
     split_ratio: 0.8

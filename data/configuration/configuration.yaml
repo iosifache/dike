@@ -1,60 +1,167 @@
 ---
 packages:
     dataset:
+        # File containing the malware families and patterns for tag matching
         malware_families: !include _families.yaml
+
+        # Type: Integer
+        # Meaning: Number of votes of an antivirus engine declaring the file as
+        #          malicious
+        # Possible values: Greater than or equal to 1
         malicious_benign_votes_ratio: 2
+
+        # Type: Float
+        # Meaning: Percentage above which a tag is considered outlier
+        #          (important, but not considered) and printed
+        # Possible values: Between 0 and 1
         min_ignored_percent: 0.03
 
     features:
         strings:
+            # Type: Integer
+            # Meaning: Minimum length of a string detected by the specific
+            #          extractor
+            # Possible values: Greater than or equal to 1
             min_string_length: 10
+
+            # Type: Integer
+            # Meaning: Minimum occurrences of a string to be saved by the
+            #          specific extractor
+            # Possible values: Greater than or equal to 1
             min_occurrences: 1
         opcodes:
+            # File containing the opcodes categories
             categories: !include _opcodes.yaml
-            allow_multiple_categories: 1
+
+            # Type: Boolean
+            # Meaning: Allowance of an opcode to be considered in multiple
+            #          categories
+            # Possible values: "True", "False"
+            allow_multiple_categories: True
+
+            # Type: Boolean
+            # Meaning: Activation of the verbose mode of the opcodes classifier
+            # Possible values: "True", "False"
             verbose: True
+
             min_ignored_percent: 0.03
         apis:
+            # File containing the Windows API functions categories
             categories: !include _apis.yaml
+
+            # Type: List of strings
+            # Meaning: Prefixes to be ignored (removed from the name) at
+            #          classification
             ignored_prefixes:
                 - Rtl
                 - Csr
                 - Dbg
                 - Ldr
                 - Nt
+
+            # Type: List of strings
+            # Meaning: Suffixes to be ignored (removed from the name) at
+            #          classification
             ignored_suffixes:
                 - Ex
                 - ExEx
                 - A
                 - W
-            allow_multiple_categories: 1
+
+            # Type: Boolean
+            # Meaning: Allowance of an API function to be considered in multiple
+            #          categories
+            # Possible values: "True", "False"
+            allow_multiple_categories: True
+
+            # Type: Boolean
+            # Meaning: Activation of the verbose mode of the Windows API
+            #          functions classifier
+            # Possible values: "True", "False"
             verbose: True
+
+            # Type: Float
+            # Meaning: Percentage above which an API function is considered
+            #          outlier (important, but not considered) and printed
+            # Possible values: Between 0 and 1
             min_ignored_percent: 0.03
 
     preprocessing:
         ngrams:
+            # Type: Integer
+            # Meaning: Length of a characters group
+            # Possible values: Greater than or equal to 1
             n: 2
+
+            # Type: Boolean
+            # Meaning: Activation of lowercase transformation of strings
+            # Possible values: "True", "False"
             to_lowercase: True
+
+            # Type: String
+            # Meaning: Charset to use when generating the N-grams
+            # Possible values: One defined charset
             valid_charset: LOWERCASE
 
     models:
         training:
             default_min_thresholds:
+                # Type: Float
+                # Meaning: Malice threshold above which a sample is considered
+                #          suspect
+                # Possible values: Between 0 and 1
                 suspect_malice: 0.3
+
+                # Type: Float
+                # Meaning: Malice threshold above which a sample is considered
+                #          malicious
+                # Possible values: Between 0 and 1
                 malicious_malice: 0.6
+
+                # Type: Float
+                # Meaning: Membership threshold above which a sample is
+                #          considered being part of a family
+                # Possible values: Between 0 and 1
                 family_membership: 0.2
         retraining:
+            # Type: Integer
+            # Meaning: Number of workers retraining models
+            # Possible values: Greater than or equal to 1
             workers_count: 4
+
+            # Type: String
+            # Meaning: Time in which retraining is executed
+            # Possible values: Respecting the hour format 'HH:MM'
             execution_time: '00:00'
         prediction:
+            # Type: Integer
+            # Meaning: Length of the random name of a ticket
+            # Possible values: Greater than or equal to 32, to avoid collisions
             ticket_length: 32
+
+            # Type: Integer
+            # Meaning: Number of seconds in which an inactive model is kept in
+            #          memory
+            # Possible values: Greater than or equal to 1
             loaded_model_lifetime: 60
+
+            # Type: Integer
+            # Meaning: Number of seconds in which an inactive ticket is kept in
+            #          memory
+            # Possible values: Greater than or equal to 1
             loaded_ticket_lifetime: 60
+
+            # Type: Integer
+            # Meaning: Number of seconds between two successive checking of the
+            #          inactivity of the models or tickets
+            # Possible values: Greater than or equal to 1
             unload_checking_interval: 10
 
 servers:
     leader:
         cli:
+            # Type: String
+            # Meaning: Banner of the command line interface of the leader server
             banner: |
                 \n
                       ██  ██  ██
@@ -65,21 +172,68 @@ servers:
                 \n
                 Platform for automatic analysis of malicious applications
                 using artificial intelligence algorithms
+
+            # Type: String
+            # Meaning: Prefix of the read commands
+            # Possible values: Anything, can contain emoji short codes
             prompt: 'dike :wavy_dash: '
+
+            # Type: String
+            # Meaning: Prefix of the printed logs
             log_line_prefix: '▒    '
+
+            # Type: Integer
+            # Meaning: Maximum string length of a received result, above each
+            #          the overflow gets replaced
+            # Possible values: Greater than or equal to 16
             max_string_len: 30
+
+            # Type: String
+            # Meaning: Replacement of the overflow mentioned above
             overflow_replacement: ...
+
+        # Type: Boolean
+        # Meaning: Activation of debugging mode
+        # Possible values: "True", "False"
         is_debug: True
+
+        # Type: Integer
+        # Meaning: Number of seconds between two successive checks for answers
+        #          from subordinate servers
+        # Possible values: Greater than or equal to 1
         answers_checking_interval: 1
 
     subordinate:
+        # Type: String
+        # Meaning: Address on which the server binds its services
+        # Possible values: IP address
         hostname: 0.0.0.0
+
+        # Type: String
+        # Meaning: Port number on which the server binds its services
+        # Possible values: Free port number
         port: 3804
 
     predictor_collector:
+        # Type: String
+        # Meaning: Address on which the server binds its services
+        # Possible values: IP address
         hostname: 0.0.0.0
+
+        # Type: String
+        # Meaning: Port number on which the server binds its services
+        # Possible values: Free port number
         port: 3804
+
+        # Type: Boolean
+        # Meaning: Activation of HTTPS, otherwise HTTP is used
+        # Possible values: "True", "False"
         is_secure: True
+
+        # Type: Boolean
+        # Meaning: Activation of debugging mode
+        # Possible values: "True", "False"
         is_debug: False
 
+# File containing the platform secrets
 secrets: !include _secrets.yaml
