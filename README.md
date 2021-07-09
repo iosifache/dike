@@ -61,7 +61,7 @@ The software enables the creation of **analysis pipelines** (named in the contex
 
 # Important Observation ⚠️
 
-***dike*** is part of my Bachelor thesis, which aims at demonstrating that the artificial intelligence techniques can improve the malware analysis. The document and the presentation (in Romanian 🇷🇴 only) can be found in a separate [repository](https://github.com/iosifache/BachelorThesis).
+***dike*** is part of my Bachelor thesis, which aims at demonstrating that the artificial intelligence techniques can improve the malware analysis. The document and the presentation (in Romanian 🇷🇴 only) can be found in a separate repository that will be made public in the near future.
 
 At the moment, this is the only place where some relevant information can be found:
 - Software requirements
