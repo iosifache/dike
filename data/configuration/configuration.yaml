@@ -223,7 +223,7 @@ servers:
         # Type: String
         # Meaning: Port number on which the server binds its services
         # Possible values: Free port number
-        port: 3804
+        port: 3805
 
         # Type: Boolean
         # Meaning: Activation of HTTPS, otherwise HTTP is used

@@ -658,8 +658,12 @@ class GeneralOLEDetails(Extractor):
                     "title", "subject", "author", "keywords", "comments",
                     "last_saved_by"
             ] and property_value):
-                document_bucket.header_text.append(
-                    property_value.decode("utf-8", "ignore"))
+                try:
+                    property_value = property_value.decode("utf-8", "ignore")
+                except Exception:  # nosec
+                    pass
+
+                document_bucket.header_text.append(property_value)
             elif property_name == "total_edit_time" and property_value:
                 document_bucket.total_edit_time = property_value
             elif property_name == "num_pages":

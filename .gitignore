@@ -20,9 +20,6 @@ data/models/.gitkeep
 data/subordinate/*
 !data/subordinate/.gitkeep
 
-## Notes
-NOTES.md
-
 # Python-specific
 
 ## Visual Studio Code

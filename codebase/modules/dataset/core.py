@@ -367,7 +367,7 @@ class DatasetCore:
         metadata["benign_ratio"] = benign_count / entries_count
         DatasetCore._dump_metadata(dataset_full_path, metadata)
 
-        # Checl if the details needs to be published into the main dataset toos
+        # Check if the details needs to be published into the main dataset too
         if not is_parent:
             DatasetCore.publish_to_dataset(Files.MALWARE_LABELS, file_type,
                                            file_hash, malice, memberships,

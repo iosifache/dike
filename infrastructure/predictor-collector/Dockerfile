@@ -5,7 +5,7 @@ FROM python
 WORKDIR /
 
 # Expose the used ports
-EXPOSE 3804 443
+EXPOSE 3805 443
 
 # Install OpenJDK and serve
 RUN apt-get update

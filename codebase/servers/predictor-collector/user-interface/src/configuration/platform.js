@@ -18,7 +18,7 @@ const CONFIGURATION = {
     },
   },
   api: {
-    apiPort: '3804',
+    apiPort: '3805',
     routes: {
       getMalwareFamilies: '/get_malware_families',
       getEvaluation: '/get_evaluation',

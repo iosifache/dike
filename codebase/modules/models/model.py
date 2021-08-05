@@ -305,7 +305,7 @@ class Model:
 
         # Apply the preprocessors and the dimensionality reduction
         features = self._preprocessing_core.preprocess(raw_features)
-        self._preprocessed_features, self._reduction_algorithm = features
+        self._preprocessed_features, self._reduced_features = features
 
         # Get the labels and remove the entries where extraction errors occurred
         if self._model_objective == ModelObjective.MALICE:

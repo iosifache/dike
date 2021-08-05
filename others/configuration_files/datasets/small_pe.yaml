@@ -6,7 +6,7 @@ file_extension: exe
 # Type: Integer
 # Meaning: Number of samples in the dataset
 # Possible values: Between 1 and the total number of samples in the dataset
-entries_count: 200 # samples
+entries_count: 200
 
 # Type: Float
 # Meaning: Minimum malice of the selected malicious samples
