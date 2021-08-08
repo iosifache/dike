@@ -26,5 +26,5 @@ CipherString = DEFAULT:@SECLEVEL=1\n" >> /etc/ssl/openssl.cnf
 
 # Run the startup script
 COPY start-server.sh /
-RUN ["chmod", "+x", "start-server.sh"]
+RUN chmod +x start-server.sh
 CMD /start-server.sh

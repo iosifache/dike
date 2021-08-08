@@ -120,7 +120,7 @@ build_infrastructure(){
   # Clone the repository inside the user home and create a symbolic link
   cd /home/"$username" || log_error_and_exit
   git clone --recurse-submodules git@github.com:iosifache/dike.git
-  ln -s DIKE_HOME/dike $DIKE_HOME
+  ln -s dike $DIKE_HOME
 
   # Create the required files and folders
   mkdir $DIKE_HOME/data/dataset/files/collected

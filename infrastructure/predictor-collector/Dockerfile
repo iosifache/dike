@@ -21,5 +21,5 @@ ENV PYTHONPATH "${PYTHONPATH}:/opt/dike/codebase"
 
 # Run the startup script
 COPY start-server.sh /
-RUN ["chmod", "+x", "start-server.sh"]
+RUN chmod +x start-server.sh
 CMD /start-server.sh

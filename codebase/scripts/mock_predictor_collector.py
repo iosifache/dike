@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-r"""Script for emulating the dike's predictor-collector server.
+"""Script for emulating the dike's predictor-collector server.
 
 Tests can be performed using httpie as follows:
 
